@@ -1,0 +1,123 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@300;400;500;600&display=swap');
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Poppins", ui-sans-serif, system-ui, sans-serif;
+
+  --color-primary-blue: #2563EB;
+  --color-deep-dark: #0F172A;
+  --color-soft-bg: #FFFFFF;
+  --color-accent-purple: #7C3AED;
+  --color-glass-highlight: #3B82F6;
+  --color-glow-accent: #60A5FA;
+
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+
+  @keyframes rotate-angle {
+    to { --angle: 360deg; }
+  }
+  @keyframes shimmer {
+    100% { transform: translateX(100%); }
+  }
+  @keyframes gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+  }
+
+  --animate-rotate-angle: rotate-angle 4s linear infinite;
+  --animate-shimmer: shimmer 2s infinite;
+  --animate-gradient-shift: gradient-shift 6s ease infinite;
+  --animate-float: float 6s ease-in-out infinite;
+}
+
+@layer base {
+  body {
+    @apply bg-soft-bg text-deep-dark font-body antialiased selection:bg-primary-blue/30 transition-colors duration-300;
+    cursor: default;
+  }
+
+  .dark body {
+    @apply bg-slate-950 text-slate-50;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-bold tracking-tight dark:text-white text-center;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-soft-bg dark:bg-slate-950;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-slate-800 rounded-full border-4 border-soft-bg dark:border-slate-950 hover:bg-primary-blue transition-colors;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border border-white/20 dark:border-slate-800/50 shadow-xl;
+  }
+
+  .bubble-glass {
+    @apply bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/30 dark:border-slate-800/30 shadow-[0_8px_32px_rgba(0,0,0,0.05)] rounded-[2.5rem];
+  }
+
+  .glass-navbar {
+    @apply bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-b border-white/20 dark:border-slate-800/50 sticky top-0 z-50;
+  }
+
+  .btn-primary {
+    @apply relative overflow-hidden bg-primary-blue text-white h-10 px-5 rounded-lg font-medium transition-all duration-300 hover:shadow-lg hover:shadow-primary-blue/20 hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2 text-sm;
+  }
+
+  .btn-primary::before {
+    content: '';
+    @apply absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent -translate-x-full hover:animate-[shimmer_2s_infinite];
+  }
+
+  .btn-secondary {
+    @apply bg-white dark:bg-slate-800 text-deep-dark dark:text-white border border-gray-200 dark:border-slate-700 h-10 px-5 rounded-lg font-medium transition-all duration-300 hover:bg-gray-50 dark:hover:bg-slate-700 hover:border-primary-blue/30 hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2 text-sm;
+  }
+
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-linear-to-r from-primary-blue via-accent-purple to-deep-dark dark:to-slate-300 animate-gradient-shift bg-[length:200%_auto];
+  }
+
+  .bento-card {
+    @apply relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-500;
+  }
+
+  .ai-glow-border {
+    @apply relative p-[1px] overflow-hidden rounded-[2.5rem];
+    background: conic-gradient(from var(--angle), #2563EB, #7C3AED, #2563EB);
+    animation: rotate-angle 4s linear infinite;
+  }
+
+  .ai-glow-inner {
+    @apply bg-white dark:bg-slate-900 rounded-[calc(2.5rem-1px)] h-full w-full;
+  }
+}
+
+@property --angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.mask-radial {
+  mask-image: radial-gradient(circle at center, black, transparent 80%);
+}

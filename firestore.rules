@@ -1,0 +1,74 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId} (matches request.auth.uid)
+    // Fields:
+    //   - uid: string (required)
+    //   - displayName: string
+    //   - email: string
+    //   - photoURL: string
+    //   - role: string (required, 'admin' or 'user')
+    //   - createdAt: string (ISO date)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "arvind90782@gmail.com" && request.auth.token.email_verified == true) ||
+          (request.auth.token.email == "armanxiom@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'role']) &&
+             data.uid is string &&
+             data.role in ['admin', 'user'] &&
+             (!('email' in data) || data.email is string) &&
+             (!('displayName' in data) || data.displayName is string) &&
+             (!('photoURL' in data) || data.photoURL is string) &&
+             (!('createdAt' in data) || data.createdAt is string);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      // Users can read their own profile. Admins can read all profiles.
+      allow read: if isOwner(userId) || isAdmin();
+
+      // Users can create their own profile.
+      // We allow them to set their role to 'admin' ONLY if their email is in the hardcoded admin list.
+      allow create: if isOwner(userId) && isValidUser(request.resource.data) &&
+        (request.resource.data.role == 'user' ||
+         (request.auth.token.email in ["arvind90782@gmail.com", "armanxiom@gmail.com"] && request.auth.token.email_verified == true));
+
+      // Users can update their own profile, but cannot change their role unless they are already an admin or in the hardcoded list.
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) &&
+        (request.resource.data.role == resource.data.role ||
+         (request.auth.token.email in ["arvind90782@gmail.com", "armanxiom@gmail.com"] && request.auth.token.email_verified == true) ||
+         isAdmin());
+
+      // Only admins can delete users (optional, but safer)
+      allow delete: if isAdmin();
+    }
+  }
+}
