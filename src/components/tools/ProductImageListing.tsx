@@ -67,6 +67,11 @@ export default function ProductImageListing() {
       return;
     }
 
+    if (!imageFile) {
+      setError('Please upload a product image before generating the listing.');
+      return;
+    }
+
     setError(null);
     setLimitNotice(false);
     setIsGenerating(true);
@@ -134,13 +139,20 @@ export default function ProductImageListing() {
             <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500">
               <Camera className="h-6 w-6 text-gray-400" />
               <p>Upload a product shot (white background, clear focus) to help the AI describe the visuals.</p>
-              <label className="cursor-pointer rounded-full border border-primary-blue px-4 py-2 text-xs font-black text-primary-blue">
-                <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                <span className="flex items-center gap-2">
-                  <Upload className="h-4 w-4" />
-                  Upload Image
-                </span>
+              <label
+                htmlFor="product-listing-image-upload"
+                className="cursor-pointer rounded-full border border-primary-blue px-4 py-2 text-xs font-black text-primary-blue inline-flex items-center gap-2"
+              >
+                <Upload className="h-4 w-4" />
+                Upload Image
               </label>
+              <input
+                id="product-listing-image-upload"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageUpload}
+              />
               {imagePreview && <img src={imagePreview} alt="Preview" className="mt-3 h-32 w-full rounded-xl object-contain" />}
             </div>
             <textarea
@@ -156,7 +168,7 @@ export default function ProductImageListing() {
         <div className="space-y-4">
           <button
             onClick={handleGenerate}
-            disabled={isGenerating}
+            disabled={isGenerating || !imageFile || !inputs.description.trim()}
             className="btn-primary w-full flex items-center justify-center gap-2 rounded-2xl py-4 text-sm font-black"
           >
             {isGenerating ? (
@@ -171,6 +183,9 @@ export default function ProductImageListing() {
               </>
             )}
           </button>
+          {!imageFile && (
+            <p className="text-[11px] text-gray-500 mt-2">Upload a product photo first—generations are locked without an image.</p>
+          )}
           <div className="rounded-2xl border border-gray-200 bg-white p-4 text-xs text-gray-600">
             <p className="font-black uppercase text-[11px] tracking-widest text-gray-500">AI Prompt Info</p>
             <p className="mt-2 text-[11px] text-gray-500">
