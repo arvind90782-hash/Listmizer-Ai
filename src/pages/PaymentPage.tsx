@@ -124,7 +124,12 @@ export default function PaymentPage() {
                 {`const Razorpay = require("razorpay");
 
 const instance = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
+  key_id: process.env.const Razorpay = require("razorpay");
+
+const instance = new Razorpay({
+  key_id: process.env.rzp_live_SWDQzeHd5ANuxb
+  key_secret: process.env.STSjRJKwTRCPX0
+});
   key_secret: process.env.RAZORPAY_KEY_SECRET
 });`}
               </pre>
