@@ -1,15 +1,12 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion } from 'motion/react';
 import {
   ImageIcon,
   Truck,
-  MapPin,
-  Package,
   Loader2,
-  Download,
   Crop,
-  Ruler,
 } from 'lucide-react';
+import { getShippingRates } from '../../lib/shiprocket';
 
 interface Dim {
   length: number;
@@ -27,13 +24,7 @@ interface Optimization {
   savings: number;
 }
 
-interface CourierRate {
-  courier_name: string;
-  rate: number;
-  etd: string;
-  pickup_rating?: number;
-  delivery_rating?: number;
-}
+
 
 const ImageShippingOptimizer: React.FC = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -45,44 +36,9 @@ const ImageShippingOptimizer: React.FC = () => {
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [optimizations, setOptimizations] = useState<Optimization[]>([]);
   const [error, setError] = useState('');
-  const [token, setToken] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const getToken = async (): Promise<string> => {
-    const localToken = localStorage.getItem('shiprocket_token');
-    if (localToken) return localToken;
 
-    const res = await fetch('https://apiv2.shiprocket.in/v1/external/auth/login', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        email: import.meta.env.VITE_SHIPROCKET_EMAIL || 'arvind90782@gmail.com',
-        password: import.meta.env.VITE_SHIPROCKET_PASSWORD || 'n7905752@NA',
-      }),
-    });
-    const data = await res.json();
-    const newToken = data.token;
-    localStorage.setItem('shiprocket_token', newToken);
-    setToken(newToken);
-    return newToken;
-  };
-
-  const getShippingRates = async (pickup: string, delivery: string, weight: number, length: number, breadth: number, height: number): Promise<CourierRate[]> => {
-    const token = await getToken();
-    const params = new URLSearchParams({
-      pickup_postcode: pickup,
-      delivery_postcode: delivery,
-      weight: weight.toString(),
-      length: length.toString(),
-      breadth: breadth.toString(),
-      height: height.toString(),
-    });
-    const res = await fetch(`https://apiv2.shiprocket.in/v1/external/courier/serviceability?${params}`, {
-      headers: {'Authorization': `Bearer ${token}`},
-    });
-    const data = await res.json();
-    return data.data.available_courier_companies || [];
-  };
 
   const analyzeImage = async (base64: string): Promise<{cropRatio: number}> => {
     // Use Gemini or fallback
@@ -92,15 +48,24 @@ const ImageShippingOptimizer: React.FC = () => {
   };
 
   const generateThumbnails = async (image: HTMLImageElement, ratios: number[]): Promise<string[]> => {
-    const canvas = canvasRef.current!;
-    const ctx = canvas.getContext('2d')!;
-    const thumbs = [];
-    for (let ratio of ratios) {
-      const scale = 1 - ratio;
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      throw new Error('Canvas not initialized');
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      throw new Error('Could not access canvas context');
+    }
+
+    const thumbs: string[] = [];
+    for (const ratio of ratios) {
+      const scale = Math.max(0.25, Math.min(0.9, 1 - ratio));
       const w = image.width * scale;
       const h = image.height * scale;
       canvas.width = 200;
-      canvas.height = (h / w) * 200;
+      canvas.height = (h / w) * 200 || 200;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
       thumbs.push(canvas.toDataURL());
     }
@@ -108,35 +73,76 @@ const ImageShippingOptimizer: React.FC = () => {
   };
 
   const handleOptimize = async () => {
-    if (!imageFile || !pickupPincode || !deliveryPincode || !baseWeight || !baseDims.length) {
-      setError('Please fill all fields and upload image.');
+    if (!imageFile || !imagePreview) {
+      setError('Please upload an image before optimizing.');
+      return;
+    }
+    if (!pickupPincode || !deliveryPincode || !baseWeight || baseWeight <= 0) {
+      setError('Please provide valid pin codes and weight.');
+      return;
+    }
+    if (baseDims.length <= 0 || baseDims.breadth <= 0 || baseDims.height <= 0) {
+      setError('Please provide valid package dimensions.');
       return;
     }
 
-    setIsOptimizing(true);
     setError('');
+    setIsOptimizing(true);
+    setOptimizations([]);
+
     try {
-      const base64 = imagePreview!.split(',')[1];
+      const base64 = imagePreview.split(',')[1];
       const analysis = await analyzeImage(base64);
-      const ratios = Array.from({length: 12}, (_, i) => i * 0.083); // 0-1 step 8.3%
+      const baseCrop = Math.min(0.5, Math.max(0.1, analysis.cropRatio ?? 0.3));
+      const ratios = Array.from({ length: 12 }, (_, i) => Math.min(0.85, baseCrop + i * 0.04));
 
       const img = new Image();
-      img.src = imagePreview!;
-      await new Promise(r => img.onload = r);
+      img.src = imagePreview;
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error('Unable to load the uploaded image.'));
+      });
 
       const thumbnails = await generateThumbnails(img, ratios);
+      const baseRates = await getShippingRates(
+        pickupPincode,
+        deliveryPincode,
+        baseWeight,
+        baseDims.length,
+        baseDims.breadth,
+        baseDims.height
+      );
+
+      if (baseRates.length === 0) {
+        throw new Error('No base rates available for this route.');
+      }
+
+      const baseRate = baseRates[0];
 
       const promises = ratios.map(async (ratio, i) => {
-        const scale = 1 - ratio;
-        const optDims = {
+        const scale = Math.max(0.25, 1 - ratio);
+        const optDims: Dim = {
           length: baseDims.length * scale,
           breadth: baseDims.breadth * scale,
           height: baseDims.height * scale,
         };
-        const rates = await getShippingRates(pickupPincode, deliveryPincode, baseWeight, optDims.length, optDims.breadth, optDims.height);
+
+        const rates = await getShippingRates(
+          pickupPincode,
+          deliveryPincode,
+          baseWeight,
+          optDims.length,
+          optDims.breadth,
+          optDims.height
+        );
+
+        if (!rates.length) {
+          throw new Error('No optimized rates returned.');
+        }
+
         const bestRate = rates[0];
-        const baseRate = (await getShippingRates(pickupPincode, deliveryPincode, baseWeight, baseDims.length, baseDims.breadth, baseDims.height))[0];
-        const savings = ((baseRate.rate - bestRate.rate) / baseRate.rate * 100).toFixed(1);
+        const savings = baseRate.rate > 0 ? ((baseRate.rate - bestRate.rate) / baseRate.rate) * 100 : 0;
+
         return {
           id: i,
           thumbnail: thumbnails[i],
@@ -144,7 +150,7 @@ const ImageShippingOptimizer: React.FC = () => {
           rate: bestRate.rate,
           courier: bestRate.courier_name,
           etd: bestRate.etd,
-          savings: Number(savings),
+          savings: Number(savings.toFixed(1)),
         };
       });
 
@@ -152,8 +158,8 @@ const ImageShippingOptimizer: React.FC = () => {
       const sorted = results.sort((a, b) => a.rate - b.rate);
       setOptimizations(sorted);
     } catch (err) {
-      setError('Optimization failed. Try again.');
       console.error(err);
+      setError('Optimization failed. Try again.');
     } finally {
       setIsOptimizing(false);
     }
