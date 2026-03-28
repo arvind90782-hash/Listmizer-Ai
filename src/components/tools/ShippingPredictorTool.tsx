@@ -69,8 +69,8 @@ setError('Please enter all package details before predicting shipping cost.');
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: process.env.SHIPROCKET_EMAIL || 'arvind90782@gmail.com',
-          password: process.env.SHIPROCKET_PASSWORD || 'n7905752@NA'
+          email: import.meta.env.VITE_SHIPROCKET_EMAIL || 'arvind90782@gmail.com',
+          password: import.meta.env.VITE_SHIPROCKET_PASSWORD || 'n7905752@NA'
         }),
       });
       const data = await response.json();
