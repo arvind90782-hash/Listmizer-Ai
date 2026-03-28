@@ -1,100 +1,51 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Phone, MapPin, ArrowUpRight, MessageSquare, Sparkles } from 'lucide-react';
+import { Mail, MessageSquare } from 'lucide-react';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
 
-  const contactDetails = [
-    {
-      name: 'Editor Nishant',
-      role: 'Founder & Visionary',
-      email: 'arvind90782@gmail.com',
-      phone: '9277072409',
-    },
-    {
-      name: 'Arman Ali',
-      role: 'Co-Founder & Design Lead',
-      email: 'armanxiom@gmail.com',
-      phone: '7705090700',
-    }
-  ];
-
   return (
     <footer className="bg-white dark:bg-slate-950 border-t border-gray-100 dark:border-slate-800 pt-12 pb-8">
       <div className="max-w-6xl mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-10">
           {/* Brand */}
-          <div className="lg:col-span-1">
+          <div>
             <Link to="/" className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-md overflow-hidden border border-gray-100 dark:border-slate-800">
-                <img 
-                  src="https://i.ibb.co/Xrft5mTf/Whats-App-Image-2026-03-26-at-4-09-36-PM-Photoroom.png" 
-                  alt="Listmizer AI" 
-                  className="w-full h-full object-contain p-1"
-                />
+              <div className="w-8 h-8 bg-gradient-to-br from-primary-blue to-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-lg">
+                AI
               </div>
               <span className="text-xl font-black tracking-tighter text-deep-dark dark:text-white">
                 Listmizer<span className="text-primary-blue">AI</span>
               </span>
             </Link>
-            <p className="text-xs text-gray-500 dark:text-slate-400 font-medium mb-6 leading-relaxed">
-              Empowering ecommerce brands with state-of-the-art visual intelligence.
+            <p className="text-xs text-gray-500 dark:text-slate-400 font-medium mb-6 leading-relaxed max-w-sm">
+              AI-powered tools for marketplace sellers. Optimized for Amazon, Flipkart, Meesho.
             </p>
-            
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white dark:border-slate-800 shadow-lg bg-gray-100 dark:bg-slate-800 flex items-center justify-center">
-                <img 
-                  src="https://i.ibb.co/Xrft5mTf/Whats-App-Image-2026-03-26-at-4-09-36-PM-Photoroom.png" 
-                  alt="Editor Nishant" 
-                  className="w-full h-full object-contain p-1.5"
-                />
-              </div>
-              <div>
-                <p className="text-xs font-black text-deep-dark dark:text-white">Editor Nishant</p>
-                <p className="text-[10px] font-bold text-primary-blue">Lead Visionary</p>
-              </div>
-            </div>
           </div>
 
-          {/* Contact Details */}
-          <div className="lg:col-span-2 grid sm:grid-cols-2 gap-6">
-            {contactDetails.map((contact) => (
-              <div key={contact.name} className="space-y-3">
-                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{contact.name}</h4>
-                <div className="space-y-2">
-                  <a 
-                    href={`mailto:${contact.email}`}
-                    className="flex items-center gap-2 text-gray-500 dark:text-slate-400 hover:text-primary-blue transition-colors group"
-                  >
-                    <div className="w-7 h-7 rounded-lg bg-gray-50 dark:bg-slate-900 flex items-center justify-center group-hover:bg-primary-blue/10">
-                      <Mail className="w-3.5 h-3.5" />
-                    </div>
-                    <span className="text-xs font-bold">{contact.email}</span>
-                  </a>
-                  <a 
-                    href={`https://wa.me/91${contact.phone}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-gray-500 dark:text-slate-400 hover:text-green-500 transition-colors group"
-                  >
-                    <div className="w-7 h-7 rounded-lg bg-gray-50 dark:bg-slate-900 flex items-center justify-center group-hover:bg-green-500/10">
-                      <MessageSquare className="w-3.5 h-3.5" />
-                    </div>
-                    <span className="text-xs font-bold">+91 {contact.phone}</span>
-                  </a>
-                </div>
-              </div>
-            ))}
+          {/* Support */}
+          <div>
+            <h4 className="text-sm font-black text-deep-dark dark:text-white mb-4 tracking-tight">Support</h4>
+            <div className="space-y-3">
+              <a href="mailto:support@listmizer.ai" className="flex items-center gap-3 text-gray-500 dark:text-slate-400 hover:text-primary-blue group transition-all">
+                <Mail className="w-4 h-4 shrink-0" />
+                <span className="text-sm font-bold group-hover:underline">support@listmizer.ai</span>
+              </a>
+              <a href="https://wa.me/message/ABC123" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-gray-500 dark:text-slate-400 hover:text-green-500 group transition-all">
+                <MessageSquare className="w-4 h-4 shrink-0" />
+                <span className="text-sm font-bold group-hover:underline">WhatsApp Support</span>
+              </a>
+            </div>
           </div>
 
           {/* Links */}
           <div>
-            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Company</h4>
+            <h4 className="text-sm font-black text-deep-dark dark:text-white mb-4 tracking-tight">Company</h4>
             <ul className="space-y-2">
-              {['About Us', 'Features', 'Pricing', 'Privacy Policy', 'Terms of Service'].map((link) => (
+              {['Pricing', 'Privacy', 'Terms'].map((link) => (
                 <li key={link}>
-                  <Link to="#" className="text-xs font-bold text-gray-500 dark:text-slate-400 hover:text-deep-dark dark:hover:text-white transition-colors">
+                  <Link to={`/${link.toLowerCase()}`} className="text-sm font-bold text-gray-500 dark:text-slate-400 hover:text-primary-blue transition-colors block py-1">
                     {link}
                   </Link>
                 </li>
@@ -103,14 +54,11 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="pt-8 border-t border-gray-100 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-xs font-bold text-gray-400">
-            © {currentYear} Listmizer AI. Built by <span className="text-deep-dark dark:text-white">Editor Nishant</span>.
-          </p>
+        <div className="pt-8 border-t border-gray-100 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-bold text-gray-400">
+          <p>© {currentYear} Listmizer AI. All rights reserved.</p>
           <div className="flex items-center gap-6">
-            <Link to="#" className="text-[10px] font-bold text-gray-400 hover:text-primary-blue transition-colors">Status</Link>
-            <Link to="#" className="text-[10px] font-bold text-gray-400 hover:text-primary-blue transition-colors">Security</Link>
-            <Link to="#" className="text-[10px] font-bold text-gray-400 hover:text-primary-blue transition-colors">Cookies</Link>
+            <Link to="/privacy" className="hover:text-primary-blue transition-colors">Privacy Policy</Link>
+            <Link to="/terms" className="hover:text-primary-blue transition-colors">Terms of Service</Link>
           </div>
         </div>
       </div>

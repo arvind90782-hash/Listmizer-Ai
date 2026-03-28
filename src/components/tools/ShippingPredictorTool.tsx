@@ -60,34 +60,7 @@ setError('Please enter all package details before predicting shipping cost.');
     return true;
   };
 
-  const authenticate = async () => {
-    if (token) return token;
-    try {
-      const response = await fetch('https://apiv2.shiprocket.in/v1/external/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: import.meta.env.VITE_SHIPROCKET_EMAIL || 'arvind90782@gmail.com',
-          password: import.meta.env.VITE_SHIPROCKET_PASSWORD || 'n7905752@NA'
-        }),
-      });
-      const data = await response.json();
-      if (data.token) {
-        localStorage.setItem('shiprocket_token', data.token);
-        setToken(data.token);
-        return data.token;
-      } else {
-        setError('Authentication failed. Please check credentials.');
-        return null;
-      }
-    } catch (err) {
-      console.error('Auth error:', err);
-      setError('Authentication failed. Please try again later.');
-      return null;
-    }
-  };
+// Auth handled by shiprocket lib
 
 const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

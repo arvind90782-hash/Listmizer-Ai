@@ -1,41 +1,36 @@
-# Shiprocket Shipping Predictor Fix - TODO
+# Listmizer AI Full Audit & Redesign - Master TODO
 
-## [x] Step 1: Update inputs and validation
-- Rename states: origin->pickupPincode, destination->deliveryPincode, dims l/w/h -> length/breadth/height
-- Labels: Pickup Pincode, Delivery Pincode, Weight(kg), Length(cm), Breadth(cm), Height(cm)
-- Strict validate: all required or show msg & return
+## Phase 1: Security & Config Fixes [COMPLETE]
+- [x] Anonymize Footer/Navbar (remove personal names/emails/phones/images)
+- [x] Create .env.example with SHIPROCKET_EMAIL, SHIPROCKET_PASSWORD, RAZORPAY_KEY_ID
+- [x] Sanitize firebase error logging
+- [x] Test env vars injection (Vite)
 
-## [x] Step 2: Fix image upload
-- Add file.size > 5MB check -> error
-- Make optional (remove require)
+## Phase 2: Fix Broken Tools [PROGRESS]
+- [x] Create src/lib/shiprocket.ts (shared auth/rates)
+- [ ] ImageShippingOptimizer: Import lib, fix logic, Gemini vision
+- [ ] ShippingPredictorTool: Complete TODO items, lib import
+- [ ] Test/audit all 13 tools: validation, loading, errors
 
-## [x] Step 3: Add Shiprocket auth
-- State: token?: string
-- localStorage 'shiprocket_token'
-- Function auth(): POST login, store token/expiry
+## Phase 2: Fix Broken Tools [PENDING]
+- [ ] ImageShippingOptimizer: Implement getToken, Gemini vision dims, canvas thumbs
+- [ ] ShippingPredictorTool: Complete TODO items, image dim estimation
+- [ ] Test/audit all 13 tools: validation, loading, errors
 
-## [x] Step 4: Real API in handlePredict
-- Validate
-- If !token, await auth()
-- GET serviceability with params & Bearer token
-- Parse response.data.available_courier_companies (assume structure)
+## Phase 3: UI/UX Redesign [PENDING]
+- [ ] Home: Simplify hero/tool cards/buttons
+- [ ] Consistent tool layouts (forms/results)
+- [ ] Navbar/Footers: Clean/responsive
+- [ ] Global: Toasts, loading, mobile
 
-## [x] Step 5: Display results
-- Sort by rate asc
-- Map to cards: name, cost=rate, days=etd, rating='⭐⭐⭐⭐'
-- Remove fake data
+## Phase 4: Reliability/Perf [PENDING]
+- [ ] Input validation/rate limits
+- [ ] Firebase quotas
+- [ ] Lazy loading/images
 
-## [x] Step 6: Courier click redirect
-- window.open('https://app.shiprocket.in/shipment/create?pickup_postcode=...' + params)
+## Phase 5: Deploy [PENDING]
+- [ ] Build/test
+- [ ] Vercel config
 
-## [x] Step 7: UI improvements
-- Buttons: h-10 px-6 rounded-lg shadow-sm hover:shadow-md
-- Cards: hover:scale-[1.02] shadow-md
-- Professional spacing
+**Next: Phase 1 → Mark [x] as done. User approved full fix; credentials TBD (use placeholders, ask later)."
 
-## [ ] Step 8: Errors
-- Auth fail, API fail, invalid pin, no services -> msgs
-
-## [ ] Step 9: Test & complete
-
-Updated: When step done, mark [x]

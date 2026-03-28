@@ -59,11 +59,7 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
             <div className="w-7 h-7 bg-white rounded-lg flex items-center justify-center shadow-md transition-all duration-500 overflow-hidden border border-gray-100 dark:border-slate-800">
-              <img 
-                src="https://i.ibb.co/Xrft5mTf/Whats-App-Image-2026-03-26-at-4-09-36-PM-Photoroom.png" 
-                alt="Listmizer AI" 
-                className="w-full h-full object-contain p-1 transition-transform duration-500 group-hover:scale-110"
-              />
+<div className="w-full h-full bg-gradient-to-br from-primary-blue to-blue-600 flex items-center justify-center text-white font-bold text-[10px] rounded">AI</div>
             </div>
             <span className="text-sm md:text-base font-black tracking-tighter text-deep-dark dark:text-white">
               Listmizer<span className="text-primary-blue">AI</span>

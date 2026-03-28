@@ -1,15 +1,18 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion } from 'motion/react';
 import {
   ImageIcon,
   Truck,
-  MapPin,
-  Package,
   Loader2,
-  Download,
   Crop,
-  Ruler,
 } from 'lucide-react';
+import { getShippingRates } from '../../lib/shiprocket';
+
+interface CourierRate {
+  courier_name: string;
+  rate: number;
+  etd: string;
+}
 
 interface Dim {
   length: number;
@@ -17,23 +20,7 @@ interface Dim {
   height: number;
 }
 
-interface Optimization {
-  id: number;
-  thumbnail: string;
-  dims: Dim;
-  rate: number;
-  courier: string;
-  etd: string;
-  savings: number;
-}
 
-interface CourierRate {
-  courier_name: string;
-  rate: number;
-  etd: string;
-  pickup_rating?: number;
-  delivery_rating?: number;
-}
 
 const ImageShippingOptimizer: React.FC = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -45,44 +32,9 @@ const ImageShippingOptimizer: React.FC = () => {
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [optimizations, setOptimizations] = useState<Optimization[]>([]);
   const [error, setError] = useState('');
-  const [token, setToken] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const getToken = async (): Promise<string> => {
-    const localToken = localStorage.getItem('shiprocket_token');
-    if (localToken) return localToken;
 
-    const res = await fetch('https://apiv2.shiprocket.in/v1/external/auth/login', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        email: import.meta.env.VITE_SHIPROCKET_EMAIL || 'arvind90782@gmail.com',
-        password: import.meta.env.VITE_SHIPROCKET_PASSWORD || 'n7905752@NA',
-      }),
-    });
-    const data = await res.json();
-    const newToken = data.token;
-    localStorage.setItem('shiprocket_token', newToken);
-    setToken(newToken);
-    return newToken;
-  };
-
-  const getShippingRates = async (pickup: string, delivery: string, weight: number, length: number, breadth: number, height: number): Promise<CourierRate[]> => {
-    const token = await getToken();
-    const params = new URLSearchParams({
-      pickup_postcode: pickup,
-      delivery_postcode: delivery,
-      weight: weight.toString(),
-      length: length.toString(),
-      breadth: breadth.toString(),
-      height: height.toString(),
-    });
-    const res = await fetch(`https://apiv2.shiprocket.in/v1/external/courier/serviceability?${params}`, {
-      headers: {'Authorization': `Bearer ${token}`},
-    });
-    const data = await res.json();
-    return data.data.available_courier_companies || [];
-  };
 
   const analyzeImage = async (base64: string): Promise<{cropRatio: number}> => {
     // Use Gemini or fallback
@@ -134,8 +86,11 @@ const ImageShippingOptimizer: React.FC = () => {
           height: baseDims.height * scale,
         };
         const rates = await getShippingRates(pickupPincode, deliveryPincode, baseWeight, optDims.length, optDims.breadth, optDims.height);
+        if (rates.length === 0) throw new Error('No rates available');
         const bestRate = rates[0];
-        const baseRate = (await getShippingRates(pickupPincode, deliveryPincode, baseWeight, baseDims.length, baseDims.breadth, baseDims.height))[0];
+        const baseRates = await getShippingRates(pickupPincode, deliveryPincode, baseWeight, baseDims.length, baseDims.breadth, baseDims.height);
+        if (baseRates.length === 0) throw new Error('No base rates available');
+        const baseRate = baseRates[0];
         const savings = ((baseRate.rate - bestRate.rate) / baseRate.rate * 100).toFixed(1);
         return {
           id: i,
