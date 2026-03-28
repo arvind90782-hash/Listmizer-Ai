@@ -69,8 +69,8 @@ setError('Please enter all package details before predicting shipping cost.');
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: 'arvind90782@gmail.com',
-          password: 'n7905752@NA'
+          email: process.env.SHIPROCKET_EMAIL || 'arvind90782@gmail.com',
+          password: process.env.SHIPROCKET_PASSWORD || 'n7905752@NA'
         }),
       });
       const data = await response.json();
@@ -353,8 +353,11 @@ className="w-full h-[38px] rounded-[8px] bg-primary-blue px-6 text-sm font-black
               <div className="mt-6">
                 <p className="text-[10px] uppercase tracking-widest text-gray-500">Courier Comparison</p>
                 <div className="mt-3 grid gap-3">
-                  {prediction.courierComparison.map((item) => (
-className="group flex items-center justify-between rounded-[8px] border border-gray-100 bg-white shadow-sm hover:shadow-md cursor-pointer p-4 h-[38px] hover:scale-[1.02] transition-all overflow-hidden" onClick={() => {
+{prediction.courierComparison.slice(0, 10).map((item, index) => (
+                    <div
+                      key={item.name}
+                      className="group flex items-center justify-between rounded-[8px] border border-gray-100 bg-white shadow-sm hover:shadow-md cursor-pointer p-4 h-[38px] hover:scale-[1.02] transition-all overflow-hidden"
+                      onClick={() => {
                         const params = new URLSearchParams({
                           pickup_postcode: pickupPincode,
                           delivery_postcode: deliveryPincode,
@@ -365,12 +368,19 @@ className="group flex items-center justify-between rounded-[8px] border border-g
                           courier_name: item.name,
                         });
                         window.open(`https://app.shiprocket.in/shipment/create?${params}`, '_blank');
-                      }} role="button" tabIndex={0}
-                      <div>
-                        <p className="font-bold">{item.name}</p>
-                        <p className="text-[11px] text-gray-500">Delivery {item.delivery}</p>
+                      }}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary-blue to-blue-500 flex items-center justify-center text-white font-bold text-xs">
+                          #{index + 1}
+                        </div>
+                        <p className="font-bold text-sm">{item.name}</p>
+                        <p className="text-xs text-gray-500">{item.delivery}</p>
                       </div>
-                      <p className="font-black text-deep-dark">₹{item.price.toFixed(0)}</p>
+                      <p className="font-black text-lg text-primary-blue">₹{item.price.toFixed(0)}</p>
+                      <p className="text-xs text-gray-400 ml-2">{item.rating || '⭐⭐⭐⭐'}</p>
                     </div>
                   ))}
                 </div>
