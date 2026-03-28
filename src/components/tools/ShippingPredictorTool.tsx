@@ -87,50 +87,37 @@ const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
   const handlePredict = async () => {
     if (!validate()) return;
 
-    let currentToken = token;
-    if (!currentToken) {
-      currentToken = await authenticate();
-      if (!currentToken) return;
-    }
-
     setIsPredicting(true);
+    setPrediction(null);
     try {
-      const params = new URLSearchParams({
-        pickup_postcode: pickupPincode,
-        delivery_postcode: deliveryPincode,
-        weight: weight.toString(),
-        length: dimensions.length.toString(),
-        breadth: dimensions.breadth.toString(),
-        height: dimensions.height.toString(),
-      });
+      const rawRates = await getShippingRates(
+        pickupPincode,
+        deliveryPincode,
+        weight,
+        dimensions.length,
+        dimensions.breadth,
+        dimensions.height
+      );
 
-      const response = await fetch(`https://apiv2.shiprocket.in/v1/external/courier/serviceability?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${currentToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      let courierList = data.available_courier_companies || data.data || [];
-      if (!Array.isArray(courierList)) courierList = [];
-
-      if (courierList.length === 0) {
+      if (!rawRates.length) {
         setError('No courier services available for this route.');
-        setIsPredicting(false);
         return;
       }
 
-      const comparison = courierList.map((c: any) => ({
-        name: c.courier_name || c.name || 'Unknown',
-        price: parseFloat(c.rate) || 0,
-        delivery: c.etd || '3-5 days',
-        rating: c.pickup_rating || '⭐⭐⭐⭐',
-      })).sort((a, b) => a.price - b.price);
+      const sortedRates = [...rawRates].sort((a, b) => a.rate - b.rate);
+      const volumetricWeight =
+        (dimensions.length * dimensions.breadth * dimensions.height) / VOLUMETRIC_DIVISOR;
+      const packagingTip =
+        volumetricWeight > weight
+          ? 'Volumetric (dimensional) weight drives the quote; consider a smaller box or tighter packaging.'
+          : 'Actual weight drives the rate; consider lighter fillers or compressing the parcel.';
+
+      const comparison = sortedRates.map((rate) => ({
+        name: rate.courier_name || 'Unknown Courier',
+        price: rate.rate,
+        delivery: rate.etd || '3-5 days',
+        rating: rate.pickup_rating ? rate.pickup_rating.toFixed(1) + '/5' : undefined,
+      }));
 
       const mainPrediction = comparison[0];
 
@@ -143,11 +130,11 @@ const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         estimatedDays: mainPrediction.delivery,
         bestCourier: mainPrediction.name,
         cheapestCourier: mainPrediction.name,
-        dimensionalWeight: 0,
+        dimensionalWeight: volumetricWeight,
         actualWeight: weight,
-        packagingTip: '',
+        packagingTip,
         courierComparison: comparison,
-        volumetricDivisor: 5000,
+        volumetricDivisor: VOLUMETRIC_DIVISOR,
       });
       setError(null);
     } catch (err) {
