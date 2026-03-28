@@ -1,16 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import {
   Truck,
   MapPin,
   Package,
-  Layers,
-  Info,
-  ShieldCheck,
   RefreshCw,
   Loader2,
   ImageIcon,
 } from 'lucide-react';
+import { getShippingRates, type CourierRate } from '../../lib/shiprocket';
 
 
 
@@ -27,9 +25,11 @@ interface ShipmentPrediction {
   dimensionalWeight: number;
   actualWeight: number;
   packagingTip: string;
-  courierComparison: { name: string; price: number; delivery: string }[];
+  courierComparison: { name: string; price: number; delivery: string; rating?: string }[];
   volumetricDivisor: number;
 }
+
+const VOLUMETRIC_DIVISOR = 5000;
 
 export default function ShippingPredictorTool() {
 const [pickupPincode, setPickupPincode] = useState('');
@@ -42,25 +42,27 @@ const [dimensions, setDimensions] = useState({ length: 30, breadth: 20, height: 
   const [error, setError] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-
-  useEffect(() => {
-    const savedToken = localStorage.getItem('shiprocket_token');
-    if (savedToken) {
-      setToken(savedToken);
-    }
-  }, []);
 
   const validate = () => {
-if (!pickupPincode.trim() || !deliveryPincode.trim() || !weight || !dimensions.length || !dimensions.breadth || !dimensions.height) {
-setError('Please enter all package details before predicting shipping cost.');
+    if (!pickupPincode.trim() || !deliveryPincode.trim()) {
+      setError('Please enter both pickup and delivery pincodes.');
+      return false;
+    }
+    if (!/^\d{6}$/.test(pickupPincode) || !/^\d{6}$/.test(deliveryPincode)) {
+      setError('Use six-digit pincodes for both pickup and delivery.');
+      return false;
+    }
+    if (weight <= 0) {
+      setError('Provide a positive weight for the package.');
+      return false;
+    }
+    if (dimensions.length <= 0 || dimensions.breadth <= 0 || dimensions.height <= 0) {
+      setError('Add valid package dimensions before running the prediction.');
       return false;
     }
     setError(null);
     return true;
   };
-
-// Auth handled by shiprocket lib
 
 const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

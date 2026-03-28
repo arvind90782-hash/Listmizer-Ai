@@ -8,16 +8,20 @@ import {
 } from 'lucide-react';
 import { getShippingRates } from '../../lib/shiprocket';
 
-interface CourierRate {
-  courier_name: string;
-  rate: number;
-  etd: string;
-}
-
 interface Dim {
   length: number;
   breadth: number;
   height: number;
+}
+
+interface Optimization {
+  id: number;
+  thumbnail: string;
+  dims: Dim;
+  rate: number;
+  courier: string;
+  etd: string;
+  savings: number;
 }
 
 
@@ -44,15 +48,24 @@ const ImageShippingOptimizer: React.FC = () => {
   };
 
   const generateThumbnails = async (image: HTMLImageElement, ratios: number[]): Promise<string[]> => {
-    const canvas = canvasRef.current!;
-    const ctx = canvas.getContext('2d')!;
-    const thumbs = [];
-    for (let ratio of ratios) {
-      const scale = 1 - ratio;
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      throw new Error('Canvas not initialized');
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      throw new Error('Could not access canvas context');
+    }
+
+    const thumbs: string[] = [];
+    for (const ratio of ratios) {
+      const scale = Math.max(0.25, Math.min(0.9, 1 - ratio));
       const w = image.width * scale;
       const h = image.height * scale;
       canvas.width = 200;
-      canvas.height = (h / w) * 200;
+      canvas.height = (h / w) * 200 || 200;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
       thumbs.push(canvas.toDataURL());
     }
@@ -60,38 +73,76 @@ const ImageShippingOptimizer: React.FC = () => {
   };
 
   const handleOptimize = async () => {
-    if (!imageFile || !pickupPincode || !deliveryPincode || !baseWeight || !baseDims.length) {
-      setError('Please fill all fields and upload image.');
+    if (!imageFile || !imagePreview) {
+      setError('Please upload an image before optimizing.');
+      return;
+    }
+    if (!pickupPincode || !deliveryPincode || !baseWeight || baseWeight <= 0) {
+      setError('Please provide valid pin codes and weight.');
+      return;
+    }
+    if (baseDims.length <= 0 || baseDims.breadth <= 0 || baseDims.height <= 0) {
+      setError('Please provide valid package dimensions.');
       return;
     }
 
-    setIsOptimizing(true);
     setError('');
+    setIsOptimizing(true);
+    setOptimizations([]);
+
     try {
-      const base64 = imagePreview!.split(',')[1];
+      const base64 = imagePreview.split(',')[1];
       const analysis = await analyzeImage(base64);
-      const ratios = Array.from({length: 12}, (_, i) => i * 0.083); // 0-1 step 8.3%
+      const baseCrop = Math.min(0.5, Math.max(0.1, analysis.cropRatio ?? 0.3));
+      const ratios = Array.from({ length: 12 }, (_, i) => Math.min(0.85, baseCrop + i * 0.04));
 
       const img = new Image();
-      img.src = imagePreview!;
-      await new Promise(r => img.onload = r);
+      img.src = imagePreview;
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error('Unable to load the uploaded image.'));
+      });
 
       const thumbnails = await generateThumbnails(img, ratios);
+      const baseRates = await getShippingRates(
+        pickupPincode,
+        deliveryPincode,
+        baseWeight,
+        baseDims.length,
+        baseDims.breadth,
+        baseDims.height
+      );
+
+      if (baseRates.length === 0) {
+        throw new Error('No base rates available for this route.');
+      }
+
+      const baseRate = baseRates[0];
 
       const promises = ratios.map(async (ratio, i) => {
-        const scale = 1 - ratio;
-        const optDims = {
+        const scale = Math.max(0.25, 1 - ratio);
+        const optDims: Dim = {
           length: baseDims.length * scale,
           breadth: baseDims.breadth * scale,
           height: baseDims.height * scale,
         };
-        const rates = await getShippingRates(pickupPincode, deliveryPincode, baseWeight, optDims.length, optDims.breadth, optDims.height);
-        if (rates.length === 0) throw new Error('No rates available');
+
+        const rates = await getShippingRates(
+          pickupPincode,
+          deliveryPincode,
+          baseWeight,
+          optDims.length,
+          optDims.breadth,
+          optDims.height
+        );
+
+        if (!rates.length) {
+          throw new Error('No optimized rates returned.');
+        }
+
         const bestRate = rates[0];
-        const baseRates = await getShippingRates(pickupPincode, deliveryPincode, baseWeight, baseDims.length, baseDims.breadth, baseDims.height);
-        if (baseRates.length === 0) throw new Error('No base rates available');
-        const baseRate = baseRates[0];
-        const savings = ((baseRate.rate - bestRate.rate) / baseRate.rate * 100).toFixed(1);
+        const savings = baseRate.rate > 0 ? ((baseRate.rate - bestRate.rate) / baseRate.rate) * 100 : 0;
+
         return {
           id: i,
           thumbnail: thumbnails[i],
@@ -99,7 +150,7 @@ const ImageShippingOptimizer: React.FC = () => {
           rate: bestRate.rate,
           courier: bestRate.courier_name,
           etd: bestRate.etd,
-          savings: Number(savings),
+          savings: Number(savings.toFixed(1)),
         };
       });
 
@@ -107,8 +158,8 @@ const ImageShippingOptimizer: React.FC = () => {
       const sorted = results.sort((a, b) => a.rate - b.rate);
       setOptimizations(sorted);
     } catch (err) {
-      setError('Optimization failed. Try again.');
       console.error(err);
+      setError('Optimization failed. Try again.');
     } finally {
       setIsOptimizing(false);
     }
