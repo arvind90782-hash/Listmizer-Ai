@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import {
   Truck,
@@ -12,21 +12,11 @@ import {
   ImageIcon,
 } from 'lucide-react';
 
-const couriers = [
-  { name: 'Shiprocket', ratePerKg: 55, speed: '2-4 days', reliability: 'High' },
-  { name: 'Delhivery', ratePerKg: 60, speed: '3-5 days', reliability: 'Medium' },
-  { name: 'Blue Dart', ratePerKg: 70, speed: '2-3 days', reliability: 'High' },
-  { name: 'DTDC', ratePerKg: 50, speed: '4-6 days', reliability: 'Medium' },
-  { name: 'India Post', ratePerKg: 40, speed: '5-7 days', reliability: 'Low' },
-  { name: 'FedEx', ratePerKg: 85, speed: '1-2 days', reliability: 'Very High' },
-  { name: 'DHL', ratePerKg: 95, speed: '1-2 days', reliability: 'Very High' },
-];
 
-const packagingSuggestions = {
-  bubble: 'Use lightweight bubble wrap to reduce void space and minimize costs.',
-  box: 'Choose a snug box; avoid oversized cartons to keep dimensional weight down.',
-  courier: 'Go with courier-provided packaging for faster pickup and better protection.',
-};
+
+
+
+
 
 interface ShipmentPrediction {
   estimatedCost: number;
@@ -42,29 +32,70 @@ interface ShipmentPrediction {
 }
 
 export default function ShippingPredictorTool() {
-  const [origin, setOrigin] = useState('');
-  const [destination, setDestination] = useState('');
+const [pickupPincode, setPickupPincode] = useState('');
+const [deliveryPincode, setDeliveryPincode] = useState('');
   const [weight, setWeight] = useState<number>(0.5);
-  const [dimensions, setDimensions] = useState({ l: 30, w: 20, h: 10 });
-  const [packagingType, setPackagingType] = useState<'box' | 'bubble' | 'courier'>('box');
+const [dimensions, setDimensions] = useState({ length: 30, breadth: 20, height: 10 });
+
   const [isPredicting, setIsPredicting] = useState(false);
   const [prediction, setPrediction] = useState<ShipmentPrediction | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    const savedToken = localStorage.getItem('shiprocket_token');
+    if (savedToken) {
+      setToken(savedToken);
+    }
+  }, []);
 
   const validate = () => {
-    if (!origin.trim() || !destination.trim() || !weight || !dimensions.l || !dimensions.w || !dimensions.h) {
-      setError('Please enter required package information before predicting shipping cost.');
+if (!pickupPincode.trim() || !deliveryPincode.trim() || !weight || !dimensions.length || !dimensions.breadth || !dimensions.height) {
+setError('Please enter all package details before predicting shipping cost.');
       return false;
     }
     setError(null);
     return true;
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const authenticate = async () => {
+    if (token) return token;
+    try {
+      const response = await fetch('https://apiv2.shiprocket.in/v1/external/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: 'arvind90782@gmail.com',
+          password: 'n7905752@NA'
+        }),
+      });
+      const data = await response.json();
+      if (data.token) {
+        localStorage.setItem('shiprocket_token', data.token);
+        setToken(data.token);
+        return data.token;
+      } else {
+        setError('Authentication failed. Please check credentials.');
+        return null;
+      }
+    } catch (err) {
+      console.error('Auth error:', err);
+      setError('Authentication failed. Please try again later.');
+      return null;
+    }
+  };
+
+const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image size must be less than 5MB.');
+      return;
+    }
     setImageFile(file);
     const reader = new FileReader();
     reader.onload = () => setImagePreview(reader.result as string);
@@ -76,62 +107,77 @@ export default function ShippingPredictorTool() {
     setImagePreview(null);
   };
 
-  const calculateDimensionalWeight = (divisor = 5000) => {
-    return (dimensions.l * dimensions.w * dimensions.h) / divisor;
-  };
 
-  const buildComparison = (chargeableWeight: number) => {
-    return couriers.map((courier) => {
-      const price = chargeableWeight * courier.ratePerKg + 40;
-      return {
-        name: courier.name,
-        price,
-        delivery: courier.speed,
-      };
-    });
-  };
 
   const handlePredict = async () => {
     if (!validate()) return;
-    if (!imageFile) {
-      setError('Please upload packaging image to improve the recommendation.');
-      return;
+
+    let currentToken = token;
+    if (!currentToken) {
+      currentToken = await authenticate();
+      if (!currentToken) return;
     }
 
     setIsPredicting(true);
     try {
-      const divisor = 5000;
-      const dimensionalWeight = calculateDimensionalWeight(divisor);
-      const chargeableWeight = Math.max(weight, dimensionalWeight);
-      const comparison = buildComparison(chargeableWeight);
-      const sortedByPrice = [...comparison].sort((a, b) => a.price - b.price);
-      const mainPrediction = sortedByPrice[0];
+      const params = new URLSearchParams({
+        pickup_postcode: pickupPincode,
+        delivery_postcode: deliveryPincode,
+        weight: weight.toString(),
+        length: dimensions.length.toString(),
+        breadth: dimensions.breadth.toString(),
+        height: dimensions.height.toString(),
+      });
 
-      const bestCourier = mainPrediction.name;
-      const cheapestCourier = sortedByPrice[0].name;
-      const estimatedCost = mainPrediction.price;
-      const costRange = {
-        min: Math.max(estimatedCost * 0.95, 10),
-        max: estimatedCost * 1.05,
-      };
-      const estimatedDays = mainPrediction.delivery;
+      const response = await fetch(`https://apiv2.shiprocket.in/v1/external/courier/serviceability?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${currentToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      let courierList = data.available_courier_companies || data.data || [];
+      if (!Array.isArray(courierList)) courierList = [];
+
+      if (courierList.length === 0) {
+        setError('No courier services available for this route.');
+        setIsPredicting(false);
+        return;
+      }
+
+      const comparison = courierList.map((c: any) => ({
+        name: c.courier_name || c.name || 'Unknown',
+        price: parseFloat(c.rate) || 0,
+        delivery: c.etd || '3-5 days',
+        rating: c.pickup_rating || '⭐⭐⭐⭐',
+      })).sort((a, b) => a.price - b.price);
+
+      const mainPrediction = comparison[0];
 
       setPrediction({
-        estimatedCost,
-        costRange,
-        estimatedDays,
-        bestCourier,
-        cheapestCourier,
-        dimensionalWeight,
+        estimatedCost: mainPrediction.price,
+        costRange: {
+          min: mainPrediction.price * 0.95,
+          max: mainPrediction.price * 1.05,
+        },
+        estimatedDays: mainPrediction.delivery,
+        bestCourier: mainPrediction.name,
+        cheapestCourier: mainPrediction.name,
+        dimensionalWeight: 0,
         actualWeight: weight,
-        packagingTip: packagingSuggestions[packagingType],
+        packagingTip: '',
         courierComparison: comparison,
-        volumetricDivisor: divisor,
+        volumetricDivisor: 5000,
       });
       setError(null);
     } catch (err) {
-      console.error(err);
-      setError('Failed to predict shipping. Please try again.');
+      console.error('Prediction error:', err);
+      setError('Failed to fetch shipping rates. Please check pincodes and try again.');
     } finally {
       setIsPredicting(false);
     }
@@ -152,24 +198,24 @@ export default function ShippingPredictorTool() {
               <label className="space-y-1 text-[11px] font-black uppercase text-gray-500">
                 <span className="flex items-center gap-2">
                   <MapPin className="h-4 w-4" />
-                  Origin City
+Pickup Pincode
                 </span>
                 <input
-                  value={origin}
-                  onChange={(e) => setOrigin(e.target.value)}
-                  placeholder="Mumbai"
+value={pickupPincode}
+onChange={(e) => setPickupPincode(e.target.value)}
+placeholder="400001"
                   className="w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm focus:border-primary-blue focus:ring-2 focus:ring-primary-blue/20"
                 />
               </label>
               <label className="space-y-1 text-[11px] font-black uppercase text-gray-500">
                 <span className="flex items-center gap-2">
                   <MapPin className="h-4 w-4" />
-                  Destination City
+Delivery Pincode
                 </span>
                 <input
-                  value={destination}
-                  onChange={(e) => setDestination(e.target.value)}
-                  placeholder="Delhi"
+value={deliveryPincode}
+onChange={(e) => setDeliveryPincode(e.target.value)}
+placeholder="110001"
                   className="w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm focus:border-primary-blue focus:ring-2 focus:ring-primary-blue/20"
                 />
               </label>
@@ -190,35 +236,21 @@ export default function ShippingPredictorTool() {
                   className="w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm focus:border-primary-blue focus:ring-2 focus:ring-primary-blue/20"
                 />
               </label>
-              <label className="space-y-1 text-[11px] font-black uppercase text-gray-500">
-                <span className="flex items-center gap-2">
-                  <Layers className="h-4 w-4" />
-                  Packaging Type
-                </span>
-                <select
-                  value={packagingType}
-                  onChange={(e) => setPackagingType(e.target.value as any)}
-                  className="w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm focus:border-primary-blue focus:ring-2 focus:ring-primary-blue/20"
-                >
-                  <option value="box">Box</option>
-                  <option value="bubble">Bubble Wrap</option>
-                  <option value="courier">Courier Packaging</option>
-                </select>
-              </label>
+
             </div>
 
             <div className="mt-4 grid md:grid-cols-3 gap-4">
-              {['L', 'W', 'H'].map((key) => (
-                <label key={key} className="space-y-1 text-[11px] font-black uppercase text-gray-500 text-center">
-                  {key}
+              {(['length', 'breadth', 'height'] as const).map((dim) => (
+                <label key={dim} className="space-y-1 text-[11px] font-black uppercase text-gray-500 text-center">
+                  {dim.charAt(0).toUpperCase()}(cm)
                   <input
                     type="number"
                     min="1"
-                    value={dimensions[key.toLowerCase() as keyof typeof dimensions]}
+                    value={dimensions[dim] || ''}
                     onChange={(e) =>
                       setDimensions({
                         ...dimensions,
-                        [key.toLowerCase()]: Number(e.target.value),
+                        [dim]: Number(e.target.value),
                       })
                     }
                     className="w-full rounded-2xl border border-gray-200 px-3 py-2 text-center text-sm focus:border-primary-blue focus:ring-2 focus:ring-primary-blue/20"
@@ -260,7 +292,7 @@ export default function ShippingPredictorTool() {
               <button
                 onClick={handlePredict}
                 disabled={isPredicting}
-                className="w-full rounded-2xl bg-primary-blue py-3 text-sm font-black text-white shadow-lg shadow-primary-blue/30 transition hover:bg-blue-600 disabled:opacity-50"
+className="w-full h-[38px] rounded-[8px] bg-primary-blue px-6 text-sm font-black text-white shadow-sm hover:shadow-md hover:bg-blue-600 disabled:opacity-50 transition-all flex items-center justify-center"
               >
                 {isPredicting ? (
                   <span className="flex items-center justify-center gap-2">
@@ -322,7 +354,18 @@ export default function ShippingPredictorTool() {
                 <p className="text-[10px] uppercase tracking-widest text-gray-500">Courier Comparison</p>
                 <div className="mt-3 grid gap-3">
                   {prediction.courierComparison.map((item) => (
-                    <div key={item.name} className="flex items-center justify-between rounded-2xl border border-gray-100 px-4 py-3 text-sm">
+className="group flex items-center justify-between rounded-[8px] border border-gray-100 bg-white shadow-sm hover:shadow-md cursor-pointer p-4 h-[38px] hover:scale-[1.02] transition-all overflow-hidden" onClick={() => {
+                        const params = new URLSearchParams({
+                          pickup_postcode: pickupPincode,
+                          delivery_postcode: deliveryPincode,
+                          weight: weight.toString(),
+                          length: dimensions.length.toString(),
+                          breadth: dimensions.breadth.toString(),
+                          height: dimensions.height.toString(),
+                          courier_name: item.name,
+                        });
+                        window.open(`https://app.shiprocket.in/shipment/create?${params}`, '_blank');
+                      }} role="button" tabIndex={0}
                       <div>
                         <p className="font-bold">{item.name}</p>
                         <p className="text-[11px] text-gray-500">Delivery {item.delivery}</p>
@@ -336,7 +379,7 @@ export default function ShippingPredictorTool() {
           ) : (
             <div className="rounded-3xl border border-dashed border-gray-200 bg-white/80 p-6 text-center text-xs text-gray-500">
               <p className="font-black uppercase tracking-widest">Awaiting Prediction</p>
-              <p className="mt-2">Provide inputs and upload packaging image to simulate real courier quotes.</p>
+<p className="mt-2">Enter pickup & delivery pincodes, package dimensions, and optionally upload image for AI dimension estimation to get real Shiprocket courier rates.</p>
             </div>
           )}
         </div>
