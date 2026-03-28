@@ -95,6 +95,13 @@ export const TOOLS: Tool[] = [
     category: 'Utility'
   },
   {
+    id: 'image-shipping-opt',
+    title: 'Meesho Image Shipping Optimizer',
+    description: 'Upload image → AI crop/optimize → 12 packaging variants → cheapest Shiprocket rates.',
+    icon: Camera,
+    category: 'Logistics'
+  },
+  {
     id: 'shipping-predictor',
     title: 'Shipping Cost Predictor',
     description: 'Real-time courier rates from Shiprocket for your packages.',

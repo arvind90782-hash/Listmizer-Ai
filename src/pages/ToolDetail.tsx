@@ -15,6 +15,7 @@ import ProfitCalculator from '../components/tools/ProfitCalculator';
 import InvoiceGenerator from '../components/tools/InvoiceGenerator';
 import BarcodeGenerator from '../components/tools/BarcodeGenerator';
 import ShippingPredictorTool from '../components/tools/ShippingPredictorTool';
+import ImageShippingOptimizer from '../components/tools/ImageShippingOptimizer';
 
 const TOOL_COMPONENTS: Record<string, React.ComponentType> = {
   'listing-gen': ListingGenerator,
@@ -27,7 +28,8 @@ const TOOL_COMPONENTS: Record<string, React.ComponentType> = {
   'gst-calc': GSTCalculator,
   'profit-calc': ProfitCalculator,
   'invoice-gen': InvoiceGenerator,
-  'barcode-gen': BarcodeGenerator,
+'barcode-gen': BarcodeGenerator,
+  'image-shipping-opt': ImageShippingOptimizer,
   'shipping-predictor': ShippingPredictorTool,
 };
 
