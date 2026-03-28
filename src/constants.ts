@@ -95,23 +95,9 @@ export const TOOLS: Tool[] = [
     category: 'Utility'
   },
   {
-    id: 'bulk-catalog',
-    title: 'Bulk Catalog Generator',
-    description: 'Process hundreds of products at once with AI.',
-    icon: Package,
-    category: 'Design'
-  },
-  {
-    id: 'seo-listing',
-    title: 'SEO Listing Generator',
-    description: 'Optimize your listings for marketplace search algorithms.',
-    icon: Globe,
-    category: 'SEO'
-  },
-  {
     id: 'shipping-predictor',
     title: 'Shipping Cost Predictor',
-    description: 'AI-powered logistics cost estimation based on product dimensions.',
+    description: 'Real-time courier rates from Shiprocket for your packages.',
     icon: Truck,
     category: 'Logistics'
   }
