@@ -1,17 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-import Home from './pages/Home';
-import ToolsPage from './pages/ToolsPage';
-import ToolDetail from './pages/ToolDetail';
-import PricingPage from './pages/PricingPage';
-import PaymentPage from './pages/PaymentPage';
-import AdminPanel from './pages/AdminPanel';
 import ErrorBoundary from './components/ErrorBoundary';
 import { motion, AnimatePresence } from 'motion/react';
 import { Navigate } from 'react-router-dom';
+
+const Home = lazy(() => import('./pages/Home'));
+const ToolsPage = lazy(() => import('./pages/ToolsPage'));
+const ToolDetail = lazy(() => import('./pages/ToolDetail'));
+const PricingPage = lazy(() => import('./pages/PricingPage'));
+const PaymentPage = lazy(() => import('./pages/PaymentPage'));
+const AdminPanel = lazy(() => import('./pages/AdminPanel'));
 
 export default function App() {
   const [darkMode, setDarkMode] = useState(() => {
@@ -38,23 +39,28 @@ export default function App() {
       <div className="min-h-screen flex flex-col transition-colors duration-300 bg-white dark:bg-slate-950">
         <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
         <div className="flex-grow">
-          <AnimatePresence mode="wait">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/tools" element={<ToolsPage />} />
-              <Route path="/tools/:id" element={<ToolDetail />} />
-              <Route path="/pricing" element={<PricingPage />} />
-              <Route path="/payment" element={<PaymentPage />} />
-              <Route path="/privacy" element={<SimpleLegalPage title="Privacy Policy" />} />
-              <Route path="/terms" element={<SimpleLegalPage title="Terms of Service" />} />
-              <Route path="/admin" element={
-                <ErrorBoundary>
-                  <AdminPanel />
-                </ErrorBoundary>
-              } />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </AnimatePresence>
+          <Suspense fallback={<RouteFallback />}>
+            <AnimatePresence mode="wait">
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/tools" element={<ToolsPage />} />
+                <Route path="/tools/:id" element={<ToolDetail />} />
+                <Route path="/pricing" element={<PricingPage />} />
+                <Route path="/payment" element={<PaymentPage />} />
+                <Route path="/privacy" element={<SimpleLegalPage title="Privacy Policy" />} />
+                <Route path="/terms" element={<SimpleLegalPage title="Terms of Service" />} />
+                <Route
+                  path="/admin"
+                  element={
+                    <ErrorBoundary>
+                      <AdminPanel />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </AnimatePresence>
+          </Suspense>
         </div>
         <Footer />
       </div>
@@ -72,5 +78,13 @@ function SimpleLegalPage({ title }: { title: string }) {
         </p>
       </div>
     </main>
+  );
+}
+
+function RouteFallback() {
+  return (
+    <div className="min-h-[60vh] flex items-center justify-center">
+      <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary-blue border-t-transparent" />
+    </div>
   );
 }

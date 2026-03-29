@@ -10,6 +10,23 @@ export default defineConfig(({mode}) => {
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes('node_modules')) return;
+            if (id.includes('react-router')) return 'router';
+            if (id.includes('firebase')) return 'firebase';
+            if (id.includes('@google/genai')) return 'gemini';
+            if (id.includes('lucide-react')) return 'icons';
+            if (id.includes('motion')) return 'motion';
+            if (id.includes('sonner')) return 'sonner';
+            if (id.includes('react-razorpay')) return 'razorpay';
+            return 'vendor';
+          }
+        }
+      }
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
