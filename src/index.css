@@ -93,6 +93,10 @@
     @apply bg-white dark:bg-slate-800 text-deep-dark dark:text-white border border-gray-200 dark:border-slate-700 h-10 px-5 rounded-lg font-medium transition-all duration-300 hover:bg-gray-50 dark:hover:bg-slate-700 hover:border-primary-blue/30 hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2 text-sm;
   }
 
+  .payment-input {
+    @apply w-full bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold focus:ring-2 focus:ring-primary-blue/20 outline-none transition-all;
+  }
+
   .gradient-text {
     @apply bg-clip-text text-transparent bg-linear-to-r from-primary-blue via-accent-purple to-deep-dark dark:to-slate-300 animate-gradient-shift bg-[length:200%_auto];
   }
