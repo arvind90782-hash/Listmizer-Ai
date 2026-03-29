@@ -161,10 +161,10 @@ export default function PaymentPage() {
           <div className="mx-auto mt-8 max-w-2xl rounded-2xl border border-blue-100 bg-blue-50 p-4 dark:border-blue-800/50 dark:bg-blue-900/20">
             <p className="mb-2 flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">
               <Zap className="h-3 w-3" />
-              Razorpay key ready
+              Razorpay ready
             </p>
             <p className="text-[10px] font-bold leading-relaxed text-blue-500 dark:text-blue-300">
-              The checkout will use <code className="rounded bg-blue-100 px-1 dark:bg-blue-800">VITE_RAZORPAY_KEY_ID</code> first, and falls back to the live key you shared if the env value is missing.
+              Add your public key in <code className="rounded bg-blue-100 px-1 dark:bg-blue-800">VITE_RAZORPAY_KEY_ID</code> for production checkout. The page will keep working while you configure it.
             </p>
           </div>
         </div>
