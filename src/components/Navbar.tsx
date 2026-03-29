@@ -59,7 +59,11 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
             <div className="w-7 h-7 bg-white rounded-lg flex items-center justify-center shadow-md transition-all duration-500 overflow-hidden border border-gray-100 dark:border-slate-800">
-<div className="w-full h-full bg-gradient-to-br from-primary-blue to-blue-600 flex items-center justify-center text-white font-bold text-[10px] rounded">AI</div>
+              <img 
+                src="https://i.ibb.co/Xrft5mTf/Whats-App-Image-2026-03-26-at-4-09-36-PM-Photoroom.png" 
+                alt="Listmizer AI" 
+                className="w-full h-full object-contain p-1 transition-transform duration-500 group-hover:scale-110"
+              />
             </div>
             <span className="text-sm md:text-base font-black tracking-tighter text-deep-dark dark:text-white">
               Listmizer<span className="text-primary-blue">AI</span>
@@ -122,8 +126,8 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
               </button>
             )}
 
-            <Link to="/tools" className="btn-primary !h-9 !px-4 text-xs">
-              Generate
+            <Link to="/tools/image-gen" className="btn-primary !h-9 !px-4 text-xs">
+              Get Started
               <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -172,7 +176,7 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
                 ) : (
                   <button onClick={() => { setIsOpen(false); setIsLoginOpen(true); }} className="btn-secondary w-full dark:bg-slate-800 dark:text-white dark:border-slate-700">Login</button>
                 )}
-                <Link to="/tools" onClick={() => setIsOpen(false)} className="btn-primary w-full">Generate Image</Link>
+                <Link to="/tools/image-gen" onClick={() => setIsOpen(false)} className="btn-primary w-full">Open Image Tool</Link>
               </div>
             </motion.div>
           )}

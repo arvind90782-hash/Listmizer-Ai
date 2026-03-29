@@ -1,357 +1,193 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import {
-  Truck,
-  MapPin,
-  Package,
-  RefreshCw,
-  Loader2,
-  ImageIcon,
-} from 'lucide-react';
-import { getShippingRates, type CourierRate } from '../../lib/shiprocket';
-
-
-
-
-
-
-
-interface ShipmentPrediction {
-  estimatedCost: number;
-  costRange: { min: number; max: number };
-  estimatedDays: string;
-  bestCourier: string;
-  cheapestCourier: string;
-  dimensionalWeight: number;
-  actualWeight: number;
-  packagingTip: string;
-  courierComparison: { name: string; price: number; delivery: string; rating?: string }[];
-  volumetricDivisor: number;
-}
-
-const VOLUMETRIC_DIVISOR = 5000;
+import { Truck, MapPin, Package, TrendingUp, ShieldCheck, RefreshCw } from 'lucide-react';
+import { generateShippingEstimate } from '../../lib/gemini';
 
 export default function ShippingPredictorTool() {
-const [pickupPincode, setPickupPincode] = useState('');
-const [deliveryPincode, setDeliveryPincode] = useState('');
+  const [origin, setOrigin] = useState('');
+  const [destination, setDestination] = useState('');
   const [weight, setWeight] = useState<number>(0.5);
-const [dimensions, setDimensions] = useState({ length: 30, breadth: 20, height: 10 });
-
+  const [dimensions, setDimensions] = useState({ l: 10, w: 10, h: 10 });
   const [isPredicting, setIsPredicting] = useState(false);
-  const [prediction, setPrediction] = useState<ShipmentPrediction | null>(null);
+  const [prediction, setPrediction] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-
-  const validate = () => {
-    if (!pickupPincode.trim() || !deliveryPincode.trim()) {
-      setError('Please enter both pickup and delivery pincodes.');
-      return false;
-    }
-    if (!/^\d{6}$/.test(pickupPincode) || !/^\d{6}$/.test(deliveryPincode)) {
-      setError('Use six-digit pincodes for both pickup and delivery.');
-      return false;
-    }
-    if (weight <= 0) {
-      setError('Provide a positive weight for the package.');
-      return false;
-    }
-    if (dimensions.length <= 0 || dimensions.breadth <= 0 || dimensions.height <= 0) {
-      setError('Add valid package dimensions before running the prediction.');
-      return false;
-    }
-    setError(null);
-    return true;
-  };
-
-const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      setError('Image size must be less than 5MB.');
-      return;
-    }
-    setImageFile(file);
-    const reader = new FileReader();
-    reader.onload = () => setImagePreview(reader.result as string);
-    reader.readAsDataURL(file);
-  };
-
-  const handleRemoveImage = () => {
-    setImageFile(null);
-    setImagePreview(null);
-  };
-
-
 
   const handlePredict = async () => {
-    if (!validate()) return;
+    if (!origin || !destination) {
+      setError('Please enter both origin and destination cities.');
+      return;
+    }
 
     setIsPredicting(true);
-    setPrediction(null);
+    setError(null);
+
     try {
-      const rawRates = await getShippingRates(
-        pickupPincode,
-        deliveryPincode,
-        weight,
-        dimensions.length,
-        dimensions.breadth,
-        dimensions.height
-      );
-
-      if (!rawRates.length) {
-        setError('No courier services available for this route.');
-        return;
-      }
-
-      const sortedRates = [...rawRates].sort((a, b) => a.rate - b.rate);
-      const volumetricWeight =
-        (dimensions.length * dimensions.breadth * dimensions.height) / VOLUMETRIC_DIVISOR;
-      const packagingTip =
-        volumetricWeight > weight
-          ? 'Volumetric (dimensional) weight drives the quote; consider a smaller box or tighter packaging.'
-          : 'Actual weight drives the rate; consider lighter fillers or compressing the parcel.';
-
-      const comparison = sortedRates.map((rate) => ({
-        name: rate.courier_name || 'Unknown Courier',
-        price: rate.rate,
-        delivery: rate.etd || '3-5 days',
-        rating: rate.pickup_rating ? rate.pickup_rating.toFixed(1) + '/5' : undefined,
-      }));
-
-      const mainPrediction = comparison[0];
-
-      setPrediction({
-        estimatedCost: mainPrediction.price,
-        costRange: {
-          min: mainPrediction.price * 0.95,
-          max: mainPrediction.price * 1.05,
-        },
-        estimatedDays: mainPrediction.delivery,
-        bestCourier: mainPrediction.name,
-        cheapestCourier: mainPrediction.name,
-        dimensionalWeight: volumetricWeight,
-        actualWeight: weight,
-        packagingTip,
-        courierComparison: comparison,
-        volumetricDivisor: VOLUMETRIC_DIVISOR,
-      });
-      setError(null);
+      const data = await generateShippingEstimate(origin, destination, weight);
+      setPrediction(data);
     } catch (err) {
-      console.error('Prediction error:', err);
-      setError('Failed to fetch shipping rates. Please check pincodes and try again.');
+      console.error(err);
+      setError('Failed to predict shipping. Please try again.');
     } finally {
       setIsPredicting(false);
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-4">
-          <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h3 className="text-lg font-black text-deep-dark flex items-center gap-2">
-              <Truck className="h-5 w-5 text-primary-blue" />
-              Shipping Cost Predictor
-            </h3>
-            <p className="text-xs text-gray-500 mt-1">Enter package details to get accurate quotes from major couriers.</p>
-
-            <div className="mt-6 grid md:grid-cols-2 gap-4">
-              <label className="space-y-1 text-[11px] font-black uppercase text-gray-500">
-                <span className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4" />
-Pickup Pincode
-                </span>
-                <input
-value={pickupPincode}
-onChange={(e) => setPickupPincode(e.target.value)}
-placeholder="400001"
-                  className="w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm focus:border-primary-blue focus:ring-2 focus:ring-primary-blue/20"
-                />
+    <div className="space-y-8">
+      <div className="grid gap-12 md:grid-cols-2">
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-sm font-bold text-gray-700 dark:text-slate-300">
+                Origin City
               </label>
-              <label className="space-y-1 text-[11px] font-black uppercase text-gray-500">
-                <span className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4" />
-Delivery Pincode
-                </span>
+              <div className="relative">
+                <MapPin className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 <input
-value={deliveryPincode}
-onChange={(e) => setDeliveryPincode(e.target.value)}
-placeholder="110001"
-                  className="w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm focus:border-primary-blue focus:ring-2 focus:ring-primary-blue/20"
+                  type="text"
+                  value={origin}
+                  onChange={(e) => setOrigin(e.target.value)}
+                  placeholder="e.g. Mumbai"
+                  className="w-full rounded-xl border border-gray-200 bg-white py-3 pl-12 pr-4 transition-all focus:outline-none focus:ring-2 focus:ring-primary-blue dark:border-slate-700 dark:bg-slate-800"
                 />
-              </label>
+              </div>
             </div>
-
-            <div className="mt-4 grid md:grid-cols-3 gap-4">
-              <label className="space-y-1 text-[11px] font-black uppercase text-gray-500">
-                <span className="flex items-center gap-2">
-                  <Package className="h-4 w-4" />
-                  Weight (kg)
-                </span>
+            <div>
+              <label className="mb-2 block text-sm font-bold text-gray-700 dark:text-slate-300">
+                Destination City
+              </label>
+              <div className="relative">
+                <MapPin className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 <input
-                  type="number"
-                  step="0.1"
-                  min="0.1"
-                  value={weight || ''}
-                  onChange={(e) => setWeight(Number(e.target.value))}
-                  className="w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm focus:border-primary-blue focus:ring-2 focus:ring-primary-blue/20"
+                  type="text"
+                  value={destination}
+                  onChange={(e) => setDestination(e.target.value)}
+                  placeholder="e.g. Delhi"
+                  className="w-full rounded-xl border border-gray-200 bg-white py-3 pl-12 pr-4 transition-all focus:outline-none focus:ring-2 focus:ring-primary-blue dark:border-slate-700 dark:bg-slate-800"
                 />
-              </label>
-
+              </div>
             </div>
+          </div>
 
-            <div className="mt-4 grid md:grid-cols-3 gap-4">
-              {(['length', 'breadth', 'height'] as const).map((dim) => (
-                <label key={dim} className="space-y-1 text-[11px] font-black uppercase text-gray-500 text-center">
-                  {dim.charAt(0).toUpperCase()}(cm)
-                  <input
-                    type="number"
-                    min="1"
-                    value={dimensions[dim] || ''}
-                    onChange={(e) =>
-                      setDimensions({
-                        ...dimensions,
-                        [dim]: Number(e.target.value),
-                      })
-                    }
-                    className="w-full rounded-2xl border border-gray-200 px-3 py-2 text-center text-sm focus:border-primary-blue focus:ring-2 focus:ring-primary-blue/20"
-                  />
-                </label>
-              ))}
-            </div>
-
-            <div className="mt-4 flex items-center gap-3">
-              <label
-                htmlFor="shipping-image"
-                className="cursor-pointer rounded-2xl border border-dashed border-gray-300 px-4 py-2 text-xs font-black text-gray-600 flex items-center gap-2 hover:border-primary-blue hover:text-primary-blue transition"
-              >
-                <ImageIcon className="h-4 w-4" />
-                Upload Packaging Image
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-sm font-bold text-gray-700 dark:text-slate-300">
+                Weight (kg)
               </label>
               <input
-                id="shipping-image"
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                className="hidden"
-                onChange={handleImageUpload}
+                type="number"
+                step="0.1"
+                value={weight}
+                onChange={(e) => setWeight(Number(e.target.value))}
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 transition-all focus:outline-none focus:ring-2 focus:ring-primary-blue dark:border-slate-700 dark:bg-slate-800"
               />
-              {imagePreview && (
-                <div className="flex items-center gap-2">
-                  <img src={imagePreview} className="h-12 w-12 rounded-lg object-cover border border-gray-200" alt="Packaging preview" />
-                  <button
-                    type="button"
-                    onClick={handleRemoveImage}
-                    className="text-xs font-semibold text-gray-500 hover:text-red-500"
-                  >
-                    Remove
-                  </button>
-                </div>
-              )}
             </div>
-
-            <div className="mt-6">
-              <button
-                onClick={handlePredict}
-                disabled={isPredicting}
-className="w-full h-[38px] rounded-[8px] bg-primary-blue px-6 text-sm font-black text-white shadow-sm hover:shadow-md hover:bg-blue-600 disabled:opacity-50 transition-all flex items-center justify-center"
-              >
-                {isPredicting ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Calculating in real time...
-                  </span>
-                ) : (
-                  <span className="flex items-center justify-center gap-2">
-                    <RefreshCw className="h-4 w-4" />
-                    Predict Shipping Cost
-                  </span>
-                )}
-              </button>
+            <div>
+              <label className="mb-2 block text-sm font-bold text-gray-700 dark:text-slate-300">
+                Dimensions (cm)
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                <input
+                  type="number"
+                  value={dimensions.l}
+                  onChange={(e) => setDimensions({ ...dimensions, l: Number(e.target.value) })}
+                  placeholder="L"
+                  className="w-full rounded-xl border border-gray-200 bg-white px-2 py-3 text-center text-xs transition-all focus:outline-none focus:ring-2 focus:ring-primary-blue dark:border-slate-700 dark:bg-slate-800"
+                />
+                <input
+                  type="number"
+                  value={dimensions.w}
+                  onChange={(e) => setDimensions({ ...dimensions, w: Number(e.target.value) })}
+                  placeholder="W"
+                  className="w-full rounded-xl border border-gray-200 bg-white px-2 py-3 text-center text-xs transition-all focus:outline-none focus:ring-2 focus:ring-primary-blue dark:border-slate-700 dark:bg-slate-800"
+                />
+                <input
+                  type="number"
+                  value={dimensions.h}
+                  onChange={(e) => setDimensions({ ...dimensions, h: Number(e.target.value) })}
+                  placeholder="H"
+                  className="w-full rounded-xl border border-gray-200 bg-white px-2 py-3 text-center text-xs transition-all focus:outline-none focus:ring-2 focus:ring-primary-blue dark:border-slate-700 dark:bg-slate-800"
+                />
+              </div>
             </div>
-
-            {error && (
-              <p className="mt-3 text-xs font-bold uppercase text-red-600">{error}</p>
-            )}
           </div>
+
+          <button
+            onClick={handlePredict}
+            disabled={isPredicting}
+            className="btn-primary w-full !py-4"
+          >
+            {isPredicting ? (
+              <>
+                <RefreshCw className="h-5 w-5 animate-spin" />
+                Analyzing Routes...
+              </>
+            ) : (
+              <>
+                <TrendingUp className="h-5 w-5" />
+                Predict Shipping
+              </>
+            )}
+          </button>
+
+          {error && <p className="text-center text-sm font-bold text-red-500">{error}</p>}
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-6">
           {prediction ? (
-            <motion.div
-              initial={{ opacity: 0, translateY: 20 }}
-              animate={{ opacity: 1, translateY: 0 }}
-              className="rounded-3xl border border-gray-200 bg-gradient-to-br from-white to-slate-50 p-6 shadow-xl"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-black uppercase tracking-widest text-gray-400">Shipping Cost Prediction</p>
-                  <p className="text-3xl font-black text-deep-dark">₹{prediction.estimatedCost.toFixed(0)}</p>
-                  <p className="text-xs text-gray-500">
-                    Range: ₹{prediction.costRange.min.toFixed(0)} - ₹{prediction.costRange.max.toFixed(0)}
-                  </p>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-6">
+              <div className="rounded-3xl border border-gray-100 bg-gray-50 p-8 dark:border-slate-700 dark:bg-slate-800/50">
+                <div className="mb-8 flex items-start justify-between">
+                  <div>
+                    <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">Estimated Cost</p>
+                    <p className="text-3xl font-black text-primary-blue">₹{prediction.estimatedCost}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">Delivery Time</p>
+                    <p className="text-xl font-bold dark:text-white">{prediction.estimatedDays}</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-[10px] uppercase tracking-widest text-gray-400">Best Courier</p>
-                  <p className="text-lg font-black text-primary-blue">{prediction.bestCourier}</p>
-                  <p className="text-[11px] text-gray-500">{prediction.estimatedDays}</p>
-                </div>
-              </div>
 
-              <div className="mt-6 grid gap-3 rounded-2xl border border-dashed border-gray-200 bg-white/70 p-4 text-xs text-gray-600">
-                <p>
-                  <span className="font-bold text-gray-900">Dimensional Weight Impact:</span> Actual {prediction.actualWeight.toFixed(2)}kg vs volumetric {prediction.dimensionalWeight.toFixed(2)}kg (divisor {prediction.volumetricDivisor}).
-                </p>
-                <p className="text-gray-500">
-                  {prediction.dimensionalWeight > prediction.actualWeight
-                    ? 'Volumetric weight dominates the chargeable mass—consider reducing box size or choosing tighter packaging.'
-                    : 'Weight drives the cost; packaging is already optimized.'}
-                </p>
-                <p>
-                  <span className="font-bold">Packaging Tip:</span> {prediction.packagingTip}
-                </p>
-              </div>
-
-              <div className="mt-6">
-                <p className="text-[10px] uppercase tracking-widest text-gray-500">Courier Comparison</p>
-                <div className="mt-3 grid gap-3">
-{prediction.courierComparison.slice(0, 10).map((item, index) => (
-                    <div
-                      key={item.name}
-                      className="group flex items-center justify-between rounded-[8px] border border-gray-100 bg-white shadow-sm hover:shadow-md cursor-pointer p-4 h-[38px] hover:scale-[1.02] transition-all overflow-hidden"
-                      onClick={() => {
-                        const params = new URLSearchParams({
-                          pickup_postcode: pickupPincode,
-                          delivery_postcode: deliveryPincode,
-                          weight: weight.toString(),
-                          length: dimensions.length.toString(),
-                          breadth: dimensions.breadth.toString(),
-                          height: dimensions.height.toString(),
-                          courier_name: item.name,
-                        });
-                        window.open(`https://app.shiprocket.in/shipment/create?${params}`, '_blank');
-                      }}
-                      role="button"
-                      tabIndex={0}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary-blue to-blue-500 flex items-center justify-center text-white font-bold text-xs">
-                          #{index + 1}
-                        </div>
-                        <p className="font-bold text-sm">{item.name}</p>
-                        <p className="text-xs text-gray-500">{item.delivery}</p>
-                      </div>
-                      <p className="font-black text-lg text-primary-blue">₹{item.price.toFixed(0)}</p>
-                      <p className="text-xs text-gray-400 ml-2">{item.rating || '⭐⭐⭐⭐'}</p>
+                <div className="space-y-4">
+                  {prediction.breakdown?.map((item: any, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600 dark:text-slate-400">{item.label}</span>
+                      <span className="text-sm font-bold dark:text-white">₹{item.cost}</span>
                     </div>
                   ))}
+                </div>
+
+                <div className="mt-8 grid grid-cols-1 gap-4 border-t border-gray-200 pt-8 dark:border-slate-700 sm:grid-cols-2">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-lg bg-green-50 p-2 text-green-500 dark:bg-green-900/20">
+                      <ShieldCheck className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-gray-400">Risk Level</p>
+                      <p className="text-xs font-bold dark:text-white">{prediction.riskLevel}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-lg bg-blue-50 p-2 text-blue-500 dark:bg-blue-900/20">
+                      <Truck className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-gray-400">Carrier</p>
+                      <p className="text-xs font-bold dark:text-white">{prediction.recommendedCarrier}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </motion.div>
           ) : (
-            <div className="rounded-3xl border border-dashed border-gray-200 bg-white/80 p-6 text-center text-xs text-gray-500">
-              <p className="font-black uppercase tracking-widest">Awaiting Prediction</p>
-<p className="mt-2">Enter pickup & delivery pincodes, package dimensions, and optionally upload image for AI dimension estimation to get real Shiprocket courier rates.</p>
+            <div className="flex h-full flex-col items-center justify-center space-y-4 rounded-3xl border-2 border-dashed border-gray-100 p-12 text-center dark:border-slate-800">
+              <div className="rounded-full bg-gray-50 p-4 text-gray-300 dark:bg-slate-800/50">
+                <Package className="h-12 w-12" />
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-bold uppercase tracking-widest text-gray-400">Awaiting Input</p>
+                <p className="mx-auto max-w-[200px] text-xs text-gray-500">Enter package details to get AI-powered shipping predictions.</p>
+              </div>
             </div>
           )}
         </div>

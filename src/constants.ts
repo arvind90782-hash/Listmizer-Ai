@@ -11,19 +11,11 @@ import {
   Zap,
   Globe,
   BarChart3,
-  Package,
-  Camera
+  Package
 } from 'lucide-react';
 import { Tool, PricingPlan } from './types';
 
 export const TOOLS: Tool[] = [
-  {
-    id: 'listing-gen',
-    title: 'AI Product Listing Generator',
-    description: 'Create high-converting product titles and descriptions instantly.',
-    icon: ShoppingBag,
-    category: 'Content'
-  },
   {
     id: 'image-gen',
     title: 'AI Product Image Generator',
@@ -32,10 +24,10 @@ export const TOOLS: Tool[] = [
     category: 'Design'
   },
   {
-    id: 'image-listing',
-    title: 'Image-driven Listing Blueprint',
-    description: 'Upload a product shot and get a fully structured marketplace listing with titles, variants, SEO, pricing, shipping, and compliance data.',
-    icon: Camera,
+    id: 'listing-gen',
+    title: 'AI Product Listing Generator',
+    description: 'Create high-converting product titles and descriptions instantly.',
+    icon: ShoppingBag,
     category: 'Content'
   },
   {
@@ -95,16 +87,23 @@ export const TOOLS: Tool[] = [
     category: 'Utility'
   },
   {
-    id: 'image-shipping-opt',
-    title: 'Meesho Image Shipping Optimizer',
-    description: 'Upload image → AI crop/optimize → 12 packaging variants → cheapest Shiprocket rates.',
-    icon: Camera,
-    category: 'Logistics'
+    id: 'bulk-catalog',
+    title: 'Bulk Catalog Generator',
+    description: 'Process hundreds of products at once with AI.',
+    icon: Package,
+    category: 'Design'
+  },
+  {
+    id: 'seo-listing',
+    title: 'SEO Listing Generator',
+    description: 'Optimize your listings for marketplace search algorithms.',
+    icon: Globe,
+    category: 'SEO'
   },
   {
     id: 'shipping-predictor',
     title: 'Shipping Cost Predictor',
-    description: 'Real-time courier rates from Shiprocket for your packages.',
+    description: 'AI-powered logistics cost estimation based on product dimensions.',
     icon: Truck,
     category: 'Logistics'
   }

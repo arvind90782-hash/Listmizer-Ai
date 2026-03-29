@@ -5,7 +5,6 @@ import { TOOLS } from '../constants';
 import { ArrowLeft, Sparkles, AlertCircle } from 'lucide-react';
 import ListingGenerator from '../components/tools/ListingGenerator';
 import ImageGenerator from '../components/tools/ImageGenerator';
-import ProductImageListing from '../components/tools/ProductImageListing';
 import KeywordTool from '../components/tools/KeywordTool';
 import AmazonCalculator from '../components/tools/AmazonCalculator';
 import FlipkartCalculator from '../components/tools/FlipkartCalculator';
@@ -15,12 +14,10 @@ import ProfitCalculator from '../components/tools/ProfitCalculator';
 import InvoiceGenerator from '../components/tools/InvoiceGenerator';
 import BarcodeGenerator from '../components/tools/BarcodeGenerator';
 import ShippingPredictorTool from '../components/tools/ShippingPredictorTool';
-import ImageShippingOptimizer from '../components/tools/ImageShippingOptimizer';
 
 const TOOL_COMPONENTS: Record<string, React.ComponentType> = {
   'listing-gen': ListingGenerator,
   'image-gen': ImageGenerator,
-  'image-listing': ProductImageListing,
   'keyword-tool': KeywordTool,
   'amazon-calc': AmazonCalculator,
   'flipkart-calc': FlipkartCalculator,
@@ -28,8 +25,7 @@ const TOOL_COMPONENTS: Record<string, React.ComponentType> = {
   'gst-calc': GSTCalculator,
   'profit-calc': ProfitCalculator,
   'invoice-gen': InvoiceGenerator,
-'barcode-gen': BarcodeGenerator,
-  'image-shipping-opt': ImageShippingOptimizer,
+  'barcode-gen': BarcodeGenerator,
   'shipping-predictor': ShippingPredictorTool,
 };
 

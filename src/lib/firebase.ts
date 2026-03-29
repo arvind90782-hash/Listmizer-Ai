@@ -1,6 +1,15 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
-import { getFirestore, collection, addDoc, query, where, getDocs, doc, getDoc, setDoc, getDocFromServer } from 'firebase/firestore';
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+  onAuthStateChanged,
+  User,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+} from 'firebase/auth';
+import { getFirestore, doc, getDoc, setDoc, getDocFromServer } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
@@ -55,9 +64,26 @@ interface FirestoreErrorInfo {
 }
 
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
-  const safeError = error instanceof Error ? error.message : String(error);
-  console.error(`Firestore ${operationType} error at ${path}: ${safeError}`);
-  throw new Error(safeError);
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData.map(provider => ({
+        providerId: provider.providerId,
+        displayName: provider.displayName,
+        email: provider.email,
+        photoUrl: provider.photoURL
+      })) || []
+    },
+    operationType,
+    path
+  }
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
 }
 
 export const signInWithGoogle = async () => {
@@ -106,6 +132,26 @@ export const signInWithGoogle = async () => {
     console.error("Error signing in with Google", error);
     throw error;
   }
+};
+
+export const signInWithEmail = async (email: string, password: string) => {
+  const result = await signInWithEmailAndPassword(auth, email, password);
+  return result.user;
+};
+
+export const signUpWithEmail = async (email: string, password: string, displayName?: string) => {
+  const result = await createUserWithEmailAndPassword(auth, email, password);
+  if (displayName) {
+    await setDoc(doc(db, 'users', result.user.uid), {
+      uid: result.user.uid,
+      displayName,
+      email: result.user.email,
+      photoURL: result.user.photoURL,
+      createdAt: new Date().toISOString(),
+      role: ADMIN_EMAILS.includes(result.user.email || '') ? 'admin' : 'user',
+    }, { merge: true });
+  }
+  return result.user;
 };
 
 export const getUserData = async (uid: string) => {

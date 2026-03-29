@@ -173,7 +173,7 @@ export default function Home() {
             
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Magnetic strength={0.2}>
-                <Link to="/tools" className="btn-primary !px-8 !py-3 text-sm">
+                <Link to="/tools/image-gen" className="btn-primary !px-8 !py-3 text-sm">
                   Get Started Now
                 </Link>
               </Magnetic>

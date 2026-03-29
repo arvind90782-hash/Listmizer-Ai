@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Mail, Lock, Github, Chrome } from 'lucide-react';
-import { signInWithGoogle } from '../lib/firebase';
+import { X, Mail, Lock, Chrome, UserRound } from 'lucide-react';
+import { signInWithGoogle, signInWithEmail, signUpWithEmail } from '../lib/firebase';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -9,19 +9,50 @@ interface LoginModalProps {
 }
 
 export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
-  const [isLogin, setIsLogin] = useState(true);
+  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleGoogleSignIn = async () => {
+  const closeAndReset = () => {
+    setError(null);
+    setLoading(false);
+    onClose();
+  };
+
+  const handleEmailAuth = async () => {
+    if (!email || !password) {
+      setError('Please enter your email and password.');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      if (mode === 'login') {
+        await signInWithEmail(email, password);
+      } else {
+        await signUpWithEmail(email, password, name || email.split('@')[0]);
+      }
+      closeAndReset();
+    } catch (err: any) {
+      setError(err?.message || 'Authentication failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogle = async () => {
     setLoading(true);
     setError(null);
     try {
       await signInWithGoogle();
-      onClose();
+      closeAndReset();
     } catch (err: any) {
-      console.error("Google Sign-In Error:", err);
-      setError(err.message || "Failed to sign in. Please try again.");
+      setError(err?.message || 'Google sign-in failed.');
     } finally {
       setLoading(false);
     }
@@ -35,91 +66,115 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            onClick={closeAndReset}
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
           />
-          
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden"
-          >
-            {/* Background Glow */}
-            <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary-blue/20 rounded-full blur-3xl" />
-            <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-accent-purple/20 rounded-full blur-3xl" />
 
-            <button 
-              onClick={onClose}
-              className="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+          <motion.div
+            initial={{ opacity: 0, scale: 0.94, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.94, y: 20 }}
+            className="relative w-full max-w-md overflow-hidden rounded-[2rem] border border-white/20 bg-white p-6 shadow-2xl dark:bg-slate-900 sm:p-8"
+          >
+            <div className="absolute -top-20 -right-20 h-44 w-44 rounded-full bg-primary-blue/15 blur-3xl" />
+            <div className="absolute -bottom-20 -left-20 h-44 w-44 rounded-full bg-accent-purple/15 blur-3xl" />
+
+            <button
+              onClick={closeAndReset}
+              className="absolute right-5 top-5 rounded-full p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800"
             >
-              <X className="w-5 h-5" />
+              <X className="h-5 w-5" />
             </button>
 
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-black mb-2 dark:text-white">
-                {isLogin ? 'Welcome Back' : 'Join Listmizer'}
+            <div className="relative mb-6 text-center">
+              <p className="mb-3 inline-flex rounded-full bg-primary-blue/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-primary-blue">
+                {mode === 'login' ? 'Login Required' : 'Create Account'}
+              </p>
+              <h2 className="text-3xl font-black text-deep-dark dark:text-white">
+                {mode === 'login' ? 'Welcome Back' : 'Join Listmizer'}
               </h2>
-              <p className="text-gray-500 dark:text-slate-400 font-medium">
-                {isLogin ? 'Sign in to your account' : 'Start your AI journey today'}
+              <p className="mt-2 text-sm font-medium text-gray-500 dark:text-slate-400">
+                {mode === 'login'
+                  ? 'Login to unlock full AI tools, downloads, and higher limits.'
+                  : 'Create an account to remove guest limits and save your work.'}
               </p>
             </div>
 
             {error && (
-              <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-2xl text-red-600 dark:text-red-400 text-xs font-bold">
+              <div className="mb-4 rounded-2xl border border-red-100 bg-red-50 p-4 text-xs font-bold text-red-600 dark:border-red-900/30 dark:bg-red-900/20 dark:text-red-300">
                 {error}
               </div>
             )}
 
-            <div className="space-y-4">
-              <button 
-                onClick={handleGoogleSignIn}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-4 rounded-2xl font-bold hover:bg-gray-50 dark:hover:bg-slate-700 transition-all disabled:opacity-50"
-              >
-                <Chrome className="w-5 h-5 text-primary-blue" />
-                {loading ? 'Connecting...' : 'Continue with Google'}
-              </button>
-              
-              <div className="relative flex items-center gap-4 py-2">
-                <div className="flex-grow h-px bg-gray-100 dark:bg-slate-800" />
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">or</span>
-                <div className="flex-grow h-px bg-gray-100 dark:bg-slate-800" />
-              </div>
-
-              <div className="space-y-3">
+            <div className="space-y-3">
+              {mode === 'signup' && (
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input 
-                    type="email" 
-                    placeholder="Email address"
-                    className="w-full bg-gray-50 dark:bg-slate-800 border-none p-4 pl-12 rounded-2xl focus:ring-2 focus:ring-primary-blue transition-all dark:text-white"
+                  <UserRound className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    type="text"
+                    placeholder="Full name"
+                    className="w-full rounded-2xl border-0 bg-gray-50 py-3.5 pl-11 pr-4 text-sm font-medium outline-none ring-1 ring-transparent transition focus:ring-primary-blue dark:bg-slate-800 dark:text-white"
                   />
                 </div>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input 
-                    type="password" 
-                    placeholder="Password"
-                    className="w-full bg-gray-50 dark:bg-slate-800 border-none p-4 pl-12 rounded-2xl focus:ring-2 focus:ring-primary-blue transition-all dark:text-white"
-                  />
-                </div>
+              )}
+
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <input
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  type="email"
+                  placeholder="Email address"
+                  className="w-full rounded-2xl border-0 bg-gray-50 py-3.5 pl-11 pr-4 text-sm font-medium outline-none ring-1 ring-transparent transition focus:ring-primary-blue dark:bg-slate-800 dark:text-white"
+                />
               </div>
 
-              <button className="btn-primary w-full !py-4">
-                {isLogin ? 'Sign In' : 'Create Account'}
-              </button>
-
-              <p className="text-center text-sm font-medium text-gray-500 dark:text-slate-400">
-                {isLogin ? "Don't have an account? " : "Already have an account? "}
-                <button 
-                  onClick={() => setIsLogin(!isLogin)}
-                  className="text-primary-blue font-bold hover:underline"
-                >
-                  {isLogin ? 'Sign Up' : 'Log In'}
-                </button>
-              </p>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <input
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  type="password"
+                  placeholder="Password"
+                  className="w-full rounded-2xl border-0 bg-gray-50 py-3.5 pl-11 pr-4 text-sm font-medium outline-none ring-1 ring-transparent transition focus:ring-primary-blue dark:bg-slate-800 dark:text-white"
+                />
+              </div>
             </div>
+
+            <button
+              onClick={handleEmailAuth}
+              disabled={loading}
+              className="btn-primary mt-5 w-full !py-3.5"
+            >
+              {loading ? 'Please wait...' : mode === 'login' ? 'Sign In' : 'Create Account'}
+            </button>
+
+            <div className="relative my-5 flex items-center gap-3">
+              <div className="h-px flex-1 bg-gray-100 dark:bg-slate-800" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">or</span>
+              <div className="h-px flex-1 bg-gray-100 dark:bg-slate-800" />
+            </div>
+
+            <button
+              onClick={handleGoogle}
+              disabled={loading}
+              className="flex w-full items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3.5 text-sm font-bold text-deep-dark transition hover:bg-gray-50 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
+            >
+              <Chrome className="h-5 w-5 text-primary-blue" />
+              Continue with Google
+            </button>
+
+            <p className="mt-5 text-center text-sm font-medium text-gray-500 dark:text-slate-400">
+              {mode === 'login' ? 'New here? ' : 'Already have an account? '}
+              <button
+                onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
+                className="font-bold text-primary-blue hover:underline"
+              >
+                {mode === 'login' ? 'Sign Up' : 'Log In'}
+              </button>
+            </p>
           </motion.div>
         </div>
       )}

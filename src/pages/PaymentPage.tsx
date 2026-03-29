@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { CreditCard, CheckCircle2, ShieldCheck, ArrowRight, Sparkles, Zap, User, Mail, Phone, Package } from 'lucide-react';
+import { CreditCard, CheckCircle2, ShieldCheck, ArrowRight, Sparkles, Smartphone, Zap, User, Mail, Phone, Package } from 'lucide-react';
 import BackgroundEffects from '../components/BackgroundEffects';
 import { useRazorpay } from 'react-razorpay';
 
@@ -14,6 +14,9 @@ export default function PaymentPage() {
     businessName: ''
   });
   const { Razorpay } = useRazorpay();
+
+  const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'upi'>('upi');
+  const [utr, setUtr] = useState('');
 
   const plans = [
     { 
@@ -54,7 +57,7 @@ export default function PaymentPage() {
 
     // IMPORTANT: Replace with your actual Razorpay Live Key for production
     const options = {
-      key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_SWAfeUza1q9rTC", // Razorpay Key ID
+      key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_YOUR_KEY_HERE", 
       amount: currentPlan.amount * 100,
       currency: "INR",
       name: "Listmizer AI",
@@ -87,6 +90,16 @@ export default function PaymentPage() {
     rzp1.open();
   };
 
+  const handleUPISubmit = () => {
+    if (!utr) {
+      alert("Please enter the Transaction ID (UTR) after payment.");
+      return;
+    }
+    // In a real app, you'd save this to Firestore for admin approval
+    console.log("UPI Payment Submitted:", { utr, plan: selectedPlan, user: formData });
+    setStep(3);
+  };
+
   return (
     <div className="min-h-screen pt-32 pb-20 px-6 bg-white dark:bg-slate-950 relative overflow-hidden">
       <BackgroundEffects />
@@ -111,29 +124,13 @@ export default function PaymentPage() {
           </p>
           
           {/* Razorpay Setup Info for Admin */}
-          <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-800/50 max-w-2xl mx-auto space-y-3">
+          <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-800/50 max-w-2xl mx-auto">
             <p className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-2 flex items-center justify-center gap-2">
               <Zap className="w-3 h-3" /> Admin: Setup Razorpay
             </p>
             <p className="text-[10px] font-bold text-blue-500 dark:text-blue-300 leading-relaxed">
               To make payments work, get your API keys from the <a href="https://dashboard.razorpay.com/app/keys" target="_blank" rel="noopener noreferrer" className="underline font-black">Razorpay Dashboard</a> and update them in <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">src/pages/PaymentPage.tsx</code>.
             </p>
-            <div className="text-[10px] text-gray-700 dark:text-slate-200 font-mono bg-white/80 dark:bg-blue-900/40 border border-blue-100 dark:border-blue-900/30 rounded-xl p-3">
-              <p className="font-bold text-[9px] uppercase tracking-widest text-blue-500 mb-1">Copy this snippet for your server or config</p>
-              <pre className="text-[10px] leading-tight">
-                {`const Razorpay = require("razorpay");
-
-const instance = new Razorpay({
-  key_id: process.env.const Razorpay = require("razorpay");
-
-const instance = new Razorpay({
-  key_id: process.env.rzp_live_SWDQzeHd5ANuxb
-  key_secret: process.env.STSjRJKwTRCPX0
-});
-  key_secret: process.env.RAZORPAY_KEY_SECRET
-});`}
-              </pre>
-            </div>
           </div>
         </div>
 
@@ -292,36 +289,86 @@ const instance = new Razorpay({
                     </div>
 
                     <div className="space-y-4">
-                      <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Payment Method</p>
-                      <div className="rounded-3xl border border-gray-100 bg-white/70 p-6 text-sm text-gray-600">
-                        <div className="flex items-center gap-3">
-                          <CreditCard className="h-5 w-5 text-primary-blue" />
-                          <div>
-                            <p className="font-bold text-deep-dark">Razorpay (Card / Netbanking / UPI)</p>
-                            <p className="text-xs text-gray-500">Instant payments, secure checkout.</p>
+                      <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Choose Payment Method</p>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <button 
+                          onClick={() => setPaymentMethod('upi')}
+                          className={`p-6 rounded-3xl border-2 transition-all flex items-center gap-4 ${
+                            paymentMethod === 'upi' ? "border-primary-blue bg-primary-blue/5" : "border-gray-100 dark:border-slate-800"
+                          }`}
+                        >
+                          <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm">
+                            <Smartphone className="w-5 h-5 text-primary-blue" />
                           </div>
-                        </div>
-                        <p className="mt-3 text-[10px] text-gray-500">
-                          Razorpay takes over checkout for every successful plan purchase—no manual QR or UPI steps required.
-                        </p>
+                          <div className="text-left">
+                            <p className="text-sm font-black text-deep-dark dark:text-white">Direct UPI</p>
+                            <p className="text-[10px] font-bold text-gray-400">No KYC • Fast</p>
+                          </div>
+                        </button>
+                        <button 
+                          onClick={() => setPaymentMethod('razorpay')}
+                          className={`p-6 rounded-3xl border-2 transition-all flex items-center gap-4 ${
+                            paymentMethod === 'razorpay' ? "border-primary-blue bg-primary-blue/5" : "border-gray-100 dark:border-slate-800"
+                          }`}
+                        >
+                          <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm">
+                            <CreditCard className="w-5 h-5 text-primary-blue" />
+                          </div>
+                          <div className="text-left">
+                            <p className="text-sm font-black text-deep-dark dark:text-white">Razorpay</p>
+                            <p className="text-[10px] font-bold text-gray-400">Cards • Netbanking</p>
+                          </div>
+                        </button>
                       </div>
                     </div>
 
-                    <div className="flex gap-4">
-                      <button 
-                        onClick={() => setStep(1)}
-                        className="btn-secondary flex-1 !py-5"
-                      >
-                        Back
-                      </button>
-                      <button 
-                        onClick={handleRazorpayPayment}
-                        className="btn-primary flex-[2] !py-5 text-lg group"
-                      >
-                        Pay with Razorpay
-                        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                      </button>
-                    </div>
+                    {paymentMethod === 'upi' ? (
+                      <div className="space-y-6">
+                        <div className="bg-gray-50 dark:bg-slate-900 p-6 rounded-3xl text-center">
+                          <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Scan QR to Pay</p>
+                          <div className="w-48 h-48 bg-white rounded-2xl mx-auto mb-4 p-2 shadow-sm">
+                            <img 
+                              src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=9555742287@ybl&pn=ListmizerAI&am=${currentPlan.amount}&cu=INR`} 
+                              alt="UPI QR Code" 
+                              className="w-full h-full"
+                            />
+                          </div>
+                          <p className="text-sm font-black text-deep-dark dark:text-white">9555742287@ybl</p>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Transaction ID (UTR)</label>
+                          <input 
+                            type="text" 
+                            value={utr}
+                            onChange={(e) => setUtr(e.target.value)}
+                            placeholder="Enter 12-digit UTR number" 
+                            className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-primary-blue/20 outline-hidden transition-all"
+                          />
+                        </div>
+                        <button 
+                          onClick={handleUPISubmit}
+                          className="btn-primary w-full !py-5 text-lg"
+                        >
+                          Submit Payment Details
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-4">
+                        <button 
+                          onClick={() => setStep(1)}
+                          className="btn-secondary flex-1 !py-5"
+                        >
+                          Back
+                        </button>
+                        <button 
+                          onClick={handleRazorpayPayment}
+                          className="btn-primary flex-[2] !py-5 text-lg group"
+                        >
+                          Pay with Razorpay
+                          <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        </button>
+                      </div>
+                    )}
                   </motion.div>
                 )}
 
@@ -337,7 +384,9 @@ const instance = new Razorpay({
                     </div>
                     <h3 className="text-3xl font-black text-deep-dark dark:text-white mb-4">Payment Submitted!</h3>
                     <p className="text-lg text-gray-500 dark:text-slate-400 mb-10 font-medium">
-                      Welcome to the premium circle. Your {selectedPlan} plan is now active.
+                      {paymentMethod === 'upi' 
+                        ? "Your payment is being verified. Access will be granted within 15-30 minutes." 
+                        : `Welcome to the premium circle. Your ${selectedPlan} plan is now active.`}
                     </p>
                     <div className="flex flex-col gap-4">
                       <button className="btn-primary w-full !py-4">Go to Dashboard</button>

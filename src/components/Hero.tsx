@@ -34,8 +34,8 @@ export default function Hero() {
 
           <div className="flex flex-col sm:flex-row items-center gap-4">
             <Magnetic strength={0.2} className="w-full sm:w-auto">
-              <Link to="/tools" className="btn-primary w-full sm:w-auto">
-                Generate Now
+              <Link to="/tools/image-gen" className="btn-primary w-full sm:w-auto">
+                Open Image Tool
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </Magnetic>

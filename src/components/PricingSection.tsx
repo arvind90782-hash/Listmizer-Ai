@@ -3,8 +3,11 @@ import { motion } from 'motion/react';
 import { Check, Sparkles } from 'lucide-react';
 import { PRICING_PLANS } from '../constants';
 import { cn } from '../lib/utils';
+import { useNavigate } from 'react-router-dom';
 
 export default function PricingSection() {
+  const navigate = useNavigate();
+
   return (
     <section className="py-10 bg-soft-bg dark:bg-slate-950 relative overflow-hidden">
       <div className="max-w-6xl mx-auto px-4">
@@ -61,7 +64,9 @@ export default function PricingSection() {
                 ))}
               </div>
 
-              <button className={cn(
+              <button
+                onClick={() => navigate(`/payment?plan=${encodeURIComponent(plan.name)}`)}
+                className={cn(
                 "w-full py-1.5 rounded-xl font-bold transition-all duration-300 text-xs",
                 plan.highlighted 
                   ? "bg-primary-blue text-white shadow-md shadow-primary-blue/20 hover:bg-primary-blue/90" 
