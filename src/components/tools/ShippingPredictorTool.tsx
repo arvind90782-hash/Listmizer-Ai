@@ -3,13 +3,21 @@ import { motion } from 'motion/react';
 import { Truck, MapPin, Package, TrendingUp, ShieldCheck, RefreshCw } from 'lucide-react';
 import { generateShippingEstimate } from '../../lib/gemini';
 
+type ShippingEstimate = {
+  estimatedCost: number;
+  estimatedDays: string;
+  riskLevel: string;
+  recommendedCarrier: string;
+  breakdown: Array<{ label: string; cost: number }>;
+};
+
 export default function ShippingPredictorTool() {
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
   const [weight, setWeight] = useState<number>(0.5);
   const [dimensions, setDimensions] = useState({ l: 10, w: 10, h: 10 });
   const [isPredicting, setIsPredicting] = useState(false);
-  const [prediction, setPrediction] = useState<any>(null);
+  const [prediction, setPrediction] = useState<ShippingEstimate | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handlePredict = async () => {
@@ -149,7 +157,7 @@ export default function ShippingPredictorTool() {
                 </div>
 
                 <div className="space-y-4">
-                  {prediction.breakdown?.map((item: any, idx: number) => (
+                  {prediction.breakdown?.map((item, idx) => (
                     <div key={idx} className="flex items-center justify-between">
                       <span className="text-sm text-gray-600 dark:text-slate-400">{item.label}</span>
                       <span className="text-sm font-bold dark:text-white">₹{item.cost}</span>

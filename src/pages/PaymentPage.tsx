@@ -307,7 +307,7 @@ export default function PaymentPage() {
                           </div>
                           <div className="text-left">
                             <p className="text-sm font-black text-deep-dark dark:text-white">Direct UPI</p>
-                            <p className="text-[10px] font-bold text-gray-400">No KYC • Fast</p>
+                            <p className="text-[10px] font-bold text-gray-400">No KYC - Fast</p>
                           </div>
                         </button>
                         <button
@@ -321,7 +321,7 @@ export default function PaymentPage() {
                           </div>
                           <div className="text-left">
                             <p className="text-sm font-black text-deep-dark dark:text-white">Razorpay</p>
-                            <p className="text-[10px] font-bold text-gray-400">Cards • Netbanking</p>
+                            <p className="text-[10px] font-bold text-gray-400">Cards - Netbanking</p>
                           </div>
                         </button>
                       </div>
