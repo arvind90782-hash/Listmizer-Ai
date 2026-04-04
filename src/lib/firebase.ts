@@ -12,9 +12,48 @@ import {
 import { getFirestore, doc, getDoc, setDoc, getDocFromServer } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
-const app = initializeApp(firebaseConfig);
+type FirebaseRuntimeConfig = {
+  apiKey: string;
+  authDomain: string;
+  projectId: string;
+  appId: string;
+  storageBucket?: string;
+  messagingSenderId?: string;
+  measurementId?: string;
+  firestoreDatabaseId?: string;
+};
+
+const envFirebaseConfig: FirebaseRuntimeConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || '',
+  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || '',
+};
+
+const hasEnvFirebaseConfig = Boolean(
+  envFirebaseConfig.apiKey &&
+    envFirebaseConfig.authDomain &&
+    envFirebaseConfig.projectId &&
+    envFirebaseConfig.appId
+);
+
+const resolvedFirebaseConfig = (hasEnvFirebaseConfig ? envFirebaseConfig : firebaseConfig) as FirebaseRuntimeConfig;
+
+if (!resolvedFirebaseConfig.apiKey || resolvedFirebaseConfig.apiKey.length < 20) {
+  console.error(
+    'Firebase API key is missing/invalid. Set VITE_FIREBASE_API_KEY and related VITE_FIREBASE_* values in your .env.local.'
+  );
+}
+
+const app = initializeApp(resolvedFirebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+export const db = resolvedFirebaseConfig.firestoreDatabaseId
+  ? getFirestore(app, resolvedFirebaseConfig.firestoreDatabaseId)
+  : getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
 
 // Connection test as per guidelines
