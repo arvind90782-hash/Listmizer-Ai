@@ -1,11 +1,66 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import type { IncomingMessage } from 'http';
 import path from 'path';
 import { defineConfig } from 'vite';
 
+async function readRequestBody(req: IncomingMessage) {
+  return await new Promise<string>((resolve, reject) => {
+    const chunks: Buffer[] = [];
+
+    req.on('data', (chunk) => {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    });
+
+    req.on('end', () => {
+      resolve(Buffer.concat(chunks).toString('utf8'));
+    });
+
+    req.on('error', reject);
+  });
+}
+
+function localApiPlugin() {
+  const routes = new Map([
+    ['/api/generate-images', './api/generate-images.ts'],
+    ['/api/generate-listing', './api/generate-listing.ts'],
+    ['/api/generate-keywords', './api/generate-keywords.ts'],
+    ['/api/generate-shipping', './api/generate-shipping.ts'],
+  ]);
+
+  return {
+    name: 'local-api-routes',
+    configureServer(server: any) {
+      server.middlewares.use(async (req: any, res: any, next: any) => {
+        const route = routes.get(req.url || '');
+        if (!route) {
+          next();
+          return;
+        }
+
+        try {
+          req.body = await readRequestBody(req);
+          const module = await import(new URL(route, import.meta.url).href);
+          await module.default(req, res);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Local API route failed';
+          if (!res.headersSent) {
+            res.statusCode = 500;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: message }));
+            return;
+          }
+          next(error);
+        }
+      });
+    },
+  };
+}
+
 export default defineConfig(() => {
   return {
-    plugins: [react(), tailwindcss()],
+    base: './',
+    plugins: [react(), tailwindcss(), localApiPlugin()],
     build: {
       rollupOptions: {
         output: {

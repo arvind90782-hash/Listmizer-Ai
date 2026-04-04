@@ -52,13 +52,24 @@ const hasEnvFirebaseConfig = Boolean(
     envFirebaseConfig.appId
 );
 
+const fallbackFirebaseConfig: FirebaseRuntimeConfig = {
+  apiKey: 'missing-api-key',
+  authDomain: 'missing.firebaseapp.com',
+  projectId: 'missing-project-id',
+  appId: '1:000000000000:web:missing',
+  storageBucket: 'missing.firebasestorage.app',
+  messagingSenderId: '000000000000',
+  measurementId: '',
+  firestoreDatabaseId: '',
+};
+
 if (!hasEnvFirebaseConfig) {
   console.error(
     'Firebase config is incomplete. Set VITE_FIREBASE_API_KEY, VITE_FIREBASE_AUTH_DOMAIN, VITE_FIREBASE_PROJECT_ID, and VITE_FIREBASE_APP_ID in your .env.local and restart the dev server.'
   );
 }
 
-const resolvedFirebaseConfig = envFirebaseConfig;
+const resolvedFirebaseConfig = hasEnvFirebaseConfig ? envFirebaseConfig : fallbackFirebaseConfig;
 
 if (!resolvedFirebaseConfig.apiKey || resolvedFirebaseConfig.apiKey.length < 20) {
   console.error(

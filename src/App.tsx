@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -14,6 +14,8 @@ const PricingPage = lazy(() => import('./pages/PricingPage'));
 const PaymentPage = lazy(() => import('./pages/PaymentPage'));
 const AdminPanel = lazy(() => import('./pages/AdminPanel'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+
+const Router = window.location.hostname.endsWith('github.io') ? HashRouter : BrowserRouter;
 
 export default function App() {
   const [darkMode, setDarkMode] = useState(() => {
