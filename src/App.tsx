@@ -13,6 +13,7 @@ const ToolDetail = lazy(() => import('./pages/ToolDetail'));
 const PricingPage = lazy(() => import('./pages/PricingPage'));
 const PaymentPage = lazy(() => import('./pages/PaymentPage'));
 const AdminPanel = lazy(() => import('./pages/AdminPanel'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 
 export default function App() {
   const [darkMode, setDarkMode] = useState(() => {
@@ -47,6 +48,7 @@ export default function App() {
                 <Route path="/tools/:id" element={<ToolDetail />} />
                 <Route path="/pricing" element={<PricingPage />} />
                 <Route path="/payment" element={<PaymentPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/privacy" element={<SimpleLegalPage title="Privacy Policy" />} />
                 <Route path="/terms" element={<SimpleLegalPage title="Terms of Service" />} />
                 <Route

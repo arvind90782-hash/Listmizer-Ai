@@ -20,9 +20,14 @@ export default function BarcodeGenerator() {
     window.print();
   };
 
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    generateNew();
+  };
+
   return (
     <div className="space-y-8 max-w-2xl mx-auto">
-      <div className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label className="block text-sm font-bold text-gray-700 dark:text-slate-300 mb-2">
             Enter SKU or Product ID
@@ -36,7 +41,7 @@ export default function BarcodeGenerator() {
               className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-primary-blue outline-none transition-all"
             />
             <button
-              onClick={generateNew}
+              type="submit"
               className="p-3 rounded-xl bg-gray-100 dark:bg-slate-800 text-gray-500 hover:text-primary-blue transition-colors"
             >
               <RefreshCw className={`w-5 h-5 ${isGenerating ? 'animate-spin' : ''}`} />
@@ -59,7 +64,7 @@ export default function BarcodeGenerator() {
             <option value="QR">QR Code</option>
           </select>
         </div>
-      </div>
+      </form>
 
       <div className="p-12 rounded-3xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 flex flex-col items-center justify-center space-y-8 shadow-2xl shadow-primary-blue/5">
         <div ref={barcodeRef} className="p-8 bg-white rounded-xl border border-gray-100 flex flex-col items-center space-y-4">

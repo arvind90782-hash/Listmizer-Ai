@@ -93,6 +93,18 @@ export default function ImageGenerator() {
     link.click();
   };
 
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    await handleGenerate();
+  };
+
+  const handlePromptKeyDown = async (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      await handleGenerate();
+    }
+  };
+
   return (
     <div className="space-y-8">
       {!isLoggedIn && (
@@ -102,7 +114,7 @@ export default function ImageGenerator() {
       )}
 
       <div className="grid gap-8 md:grid-cols-2 items-start">
-        <div className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="mb-2 block text-sm font-bold text-gray-700 dark:text-slate-300">
               Product Description
@@ -110,6 +122,7 @@ export default function ImageGenerator() {
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
+              onKeyDown={handlePromptKeyDown}
               placeholder="e.g. A premium black leather handbag with gold accents on a white studio background"
               rows={4}
               className="w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 transition-all focus:outline-none focus:ring-2 focus:ring-primary-blue dark:border-slate-700 dark:bg-slate-800"
@@ -126,6 +139,7 @@ export default function ImageGenerator() {
 
           <div className="flex items-center gap-3">
             <button
+              type="button"
               onClick={() => fileInputRef.current?.click()}
               className="btn-secondary flex-1 !justify-start"
             >
@@ -141,6 +155,7 @@ export default function ImageGenerator() {
             />
             {imagePreview && (
               <button
+                type="button"
                 onClick={() => {
                   setImagePreview(null);
                   setImageFile(null);
@@ -167,7 +182,7 @@ export default function ImageGenerator() {
           )}
 
           <button
-            onClick={handleGenerate}
+            type="submit"
             disabled={isGenerating}
             className="btn-primary w-full !py-4"
           >
@@ -183,7 +198,7 @@ export default function ImageGenerator() {
               </>
             )}
           </button>
-        </div>
+        </form>
 
         <div className="relative aspect-square">
           <div className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-2xl border border-gray-100 bg-gray-50 dark:border-slate-700 dark:bg-slate-800/50">

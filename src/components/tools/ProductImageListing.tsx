@@ -91,10 +91,22 @@ export default function ProductImageListing() {
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    await handleGenerate();
+  };
+
+  const handleTextareaKeyDown = async (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      await handleGenerate();
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-4">
+        <form onSubmit={handleSubmit} className="lg:col-span-2 space-y-4">
           <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
             <h3 className="text-lg font-black text-deep-dark mb-2">Describe your product</h3>
             <p className="text-xs text-gray-500 mb-4">Just type a short summary and let the AI fill every marketplace section.</p>
@@ -121,6 +133,7 @@ export default function ProductImageListing() {
             <textarea
               value={inputs.description}
               onChange={(e) => handleChange('description', e.target.value)}
+              onKeyDown={handleTextareaKeyDown}
               rows={4}
               className="mt-4 w-full rounded-2xl border border-gray-200 px-3 py-3 text-sm focus:ring-2 focus:ring-primary-blue"
               placeholder="Describe the product in 2–3 sentences, mention usage, materials, or customer promise."
@@ -128,6 +141,7 @@ export default function ProductImageListing() {
             <textarea
               value={inputs.additionalContext}
               onChange={(e) => handleChange('additionalContext', e.target.value)}
+              onKeyDown={handleTextareaKeyDown}
               rows={2}
               className="mt-3 w-full rounded-xl border border-gray-200 px-3 py-2 text-xs focus:ring-2 focus:ring-primary-blue"
               placeholder="Additional context (ideal audience, mood, style)."
@@ -158,15 +172,17 @@ export default function ProductImageListing() {
             <textarea
               value={inputs.imageNotes}
               onChange={(e) => handleChange('imageNotes', e.target.value)}
+              onKeyDown={handleTextareaKeyDown}
               rows={2}
               className="mt-4 w-full rounded-xl border border-gray-200 px-3 py-2 text-xs focus:ring-2 focus:ring-primary-blue"
               placeholder="Optional: describe the image (angles, props, look)."
             />
           </div>
-        </div>
+        </form>
 
         <div className="space-y-4">
           <button
+            type="button"
             onClick={handleGenerate}
             disabled={isGenerating || !imageFile || !inputs.description.trim()}
             className="btn-primary w-full flex items-center justify-center gap-2 rounded-2xl py-4 text-sm font-black"

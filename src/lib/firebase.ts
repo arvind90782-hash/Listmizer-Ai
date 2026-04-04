@@ -2,15 +2,17 @@ import { initializeApp } from 'firebase/app';
 import {
   getAuth,
   GoogleAuthProvider,
+  deleteUser,
   signInWithPopup,
   signOut,
   onAuthStateChanged,
   User,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  updateEmail,
+  updateProfile,
 } from 'firebase/auth';
-import { getFirestore, doc, getDoc, setDoc, getDocFromServer } from 'firebase/firestore';
-import firebaseConfig from '../../firebase-applet-config.json';
+import { getFirestore, doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 
 type FirebaseRuntimeConfig = {
   apiKey: string;
@@ -23,6 +25,11 @@ type FirebaseRuntimeConfig = {
   firestoreDatabaseId?: string;
 };
 
+type FirebaseAuthError = {
+  code?: string;
+  message?: string;
+};
+
 const envFirebaseConfig: FirebaseRuntimeConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
@@ -31,7 +38,11 @@ const envFirebaseConfig: FirebaseRuntimeConfig = {
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || '',
-  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || '',
+  firestoreDatabaseId:
+    import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID &&
+    import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID !== '(default)'
+      ? import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID
+      : '',
 };
 
 const hasEnvFirebaseConfig = Boolean(
@@ -41,7 +52,13 @@ const hasEnvFirebaseConfig = Boolean(
     envFirebaseConfig.appId
 );
 
-const resolvedFirebaseConfig = (hasEnvFirebaseConfig ? envFirebaseConfig : firebaseConfig) as FirebaseRuntimeConfig;
+if (!hasEnvFirebaseConfig) {
+  console.error(
+    'Firebase config is incomplete. Set VITE_FIREBASE_API_KEY, VITE_FIREBASE_AUTH_DOMAIN, VITE_FIREBASE_PROJECT_ID, and VITE_FIREBASE_APP_ID in your .env.local and restart the dev server.'
+  );
+}
+
+const resolvedFirebaseConfig = envFirebaseConfig;
 
 if (!resolvedFirebaseConfig.apiKey || resolvedFirebaseConfig.apiKey.length < 20) {
   console.error(
@@ -56,21 +73,42 @@ export const db = resolvedFirebaseConfig.firestoreDatabaseId
   : getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
 
-// Connection test as per guidelines
-async function testConnection() {
-  try {
-    // Attempt to fetch a non-existent doc from server to test connectivity
-    await getDocFromServer(doc(db, '_connection_test_', 'ping'));
-    console.log("Firebase connection test successful.");
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error("Firebase Configuration Error: The client is offline. Please check your firebase-applet-config.json and network connection.");
-    }
-    // We don't throw here to avoid crashing the app on initial load, 
-    // but we log the error for diagnostics.
+const AUTH_CONFIG_HELP =
+  'Check Firebase Console > Project settings > Your apps > Web app and verify the VITE_FIREBASE_* values in .env.local, then restart the dev server.';
+
+function ensureFirebaseAuthConfig() {
+  if (!hasEnvFirebaseConfig || !resolvedFirebaseConfig.apiKey) {
+    throw new Error(`Firebase auth is not configured. ${AUTH_CONFIG_HELP}`);
   }
 }
-testConnection();
+
+function getFirebaseAuthErrorMessage(error: unknown) {
+  const firebaseError = error as FirebaseAuthError;
+
+  switch (firebaseError?.code) {
+    case 'auth/api-key-not-valid.-please-pass-a-valid-api-key.':
+    case 'auth/invalid-api-key':
+      return `Firebase API key is invalid. ${AUTH_CONFIG_HELP}`;
+    case 'auth/configuration-not-found':
+      return 'Firebase Authentication is not fully configured for this project. Enable the sign-in provider in Firebase Console > Authentication.';
+    case 'auth/operation-not-allowed':
+      return 'This sign-in method is disabled. Enable Email/Password or Google in Firebase Console > Authentication > Sign-in method.';
+    case 'auth/unauthorized-domain':
+      return 'This domain is not authorized for Firebase Authentication. Add your app domain in Firebase Console > Authentication > Settings > Authorized domains.';
+    case 'auth/requires-recent-login':
+      return 'For security reasons, please log in again before updating email or deleting your account.';
+    case 'auth/email-already-in-use':
+      return 'This email is already linked to another account.';
+    case 'auth/invalid-email':
+      return 'Please enter a valid email address.';
+    case 'auth/popup-blocked':
+      return 'Google sign-in popup was blocked by the browser. Allow popups and try again.';
+    case 'auth/popup-closed-by-user':
+      return 'Google sign-in was closed before completion. Please try again.';
+    default:
+      return firebaseError?.message || 'Authentication failed. Please try again.';
+  }
+}
 
 const ADMIN_EMAILS = ['arvind90782@gmail.com', 'armanxiom@gmail.com'];
 
@@ -125,8 +163,15 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   throw new Error(JSON.stringify(errInfo));
 }
 
+function syncUserDocument(uid: string, data: Record<string, unknown>) {
+  setDoc(doc(db, 'users', uid), data, { merge: true }).catch((error) => {
+    console.error('Background Firestore sync failed', error);
+  });
+}
+
 export const signInWithGoogle = async () => {
   try {
+    ensureFirebaseAuthConfig();
     const result = await signInWithPopup(auth, googleProvider);
     const user = result.user;
     
@@ -169,28 +214,41 @@ export const signInWithGoogle = async () => {
     return user;
   } catch (error) {
     console.error("Error signing in with Google", error);
-    throw error;
+    throw new Error(getFirebaseAuthErrorMessage(error));
   }
 };
 
 export const signInWithEmail = async (email: string, password: string) => {
-  const result = await signInWithEmailAndPassword(auth, email, password);
-  return result.user;
+  try {
+    ensureFirebaseAuthConfig();
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    return result.user;
+  } catch (error) {
+    throw new Error(getFirebaseAuthErrorMessage(error));
+  }
 };
 
 export const signUpWithEmail = async (email: string, password: string, displayName?: string) => {
-  const result = await createUserWithEmailAndPassword(auth, email, password);
-  if (displayName) {
-    await setDoc(doc(db, 'users', result.user.uid), {
-      uid: result.user.uid,
-      displayName,
-      email: result.user.email,
-      photoURL: result.user.photoURL,
-      createdAt: new Date().toISOString(),
-      role: ADMIN_EMAILS.includes(result.user.email || '') ? 'admin' : 'user',
-    }, { merge: true });
+  try {
+    ensureFirebaseAuthConfig();
+    const result = await createUserWithEmailAndPassword(auth, email, password);
+    const trimmedName = displayName?.trim();
+
+    if (trimmedName) {
+      await updateProfile(result.user, { displayName: trimmedName });
+      syncUserDocument(result.user.uid, {
+        uid: result.user.uid,
+        displayName: trimmedName,
+        email: result.user.email,
+        photoURL: result.user.photoURL,
+        createdAt: new Date().toISOString(),
+        role: ADMIN_EMAILS.includes(result.user.email || '') ? 'admin' : 'user',
+      });
+    }
+    return result.user;
+  } catch (error) {
+    throw new Error(getFirebaseAuthErrorMessage(error));
   }
-  return result.user;
 };
 
 export const getUserData = async (uid: string) => {
@@ -204,6 +262,71 @@ export const getUserData = async (uid: string) => {
 };
 
 export const logout = () => signOut(auth);
+
+export const updateAccountName = async (displayName: string) => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('You need to be logged in to update your profile.');
+  }
+
+  const trimmedName = displayName.trim();
+  if (!trimmedName) {
+    throw new Error('Please enter a valid name.');
+  }
+
+  try {
+    await updateProfile(user, { displayName: trimmedName });
+    syncUserDocument(user.uid, {
+      displayName: trimmedName,
+      email: user.email,
+      photoURL: user.photoURL,
+    });
+  } catch (error) {
+    throw new Error(getFirebaseAuthErrorMessage(error));
+  }
+};
+
+export const updateAccountEmail = async (nextEmail: string) => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('You need to be logged in to update your email.');
+  }
+
+  const trimmedEmail = nextEmail.trim();
+  if (!trimmedEmail) {
+    throw new Error('Please enter a valid email address.');
+  }
+
+  try {
+    await updateEmail(user, trimmedEmail);
+    syncUserDocument(user.uid, {
+      email: trimmedEmail,
+    });
+  } catch (error) {
+    throw new Error(getFirebaseAuthErrorMessage(error));
+  }
+};
+
+export const deleteAccount = async () => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('You need to be logged in to delete your account.');
+  }
+
+  const userId = user.uid;
+
+  try {
+    await deleteDoc(doc(db, 'users', userId));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, `users/${userId}`);
+  }
+
+  try {
+    await deleteUser(user);
+  } catch (error) {
+    throw new Error(getFirebaseAuthErrorMessage(error));
+  }
+};
 
 export { onAuthStateChanged };
 export type { User };

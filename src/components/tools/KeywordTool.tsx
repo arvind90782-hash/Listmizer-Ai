@@ -37,10 +37,15 @@ export default function KeywordTool() {
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    await handleGenerate();
+  };
+
   return (
     <div className="space-y-8">
       <div className="grid md:grid-cols-2 gap-8 items-start">
-        <div className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-bold text-gray-700 dark:text-slate-300 mb-2">
               Product Name / Category
@@ -64,6 +69,7 @@ export default function KeywordTool() {
             <div className="grid grid-cols-2 gap-2">
               {['Amazon', 'Flipkart', 'Meesho', 'Myntra'].map((p) => (
                 <button
+                  type="button"
                   key={p}
                   onClick={() => setPlatform(p)}
                   className={`px-4 py-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 ${
@@ -104,7 +110,7 @@ export default function KeywordTool() {
           )}
 
           <button
-            onClick={handleGenerate}
+            type="submit"
             disabled={isGenerating}
             className="btn-primary w-full flex items-center justify-center gap-2 !py-4"
           >
@@ -120,7 +126,7 @@ export default function KeywordTool() {
               </>
             )}
           </button>
-        </div>
+        </form>
 
         <div className="relative min-h-[400px]">
           <div className="absolute inset-0 bg-gray-50 dark:bg-slate-800/50 rounded-2xl border border-gray-100 dark:border-slate-700 p-6 overflow-auto">

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Menu, X, Sparkles, ArrowUpRight, Moon, Sun, LogOut, User as UserIcon } from 'lucide-react';
+import { Menu, X, Sparkles, ArrowUpRight, Moon, Sun, User as UserIcon, LayoutDashboard, ShieldCheck } from 'lucide-react';
 import { cn } from '../lib/utils';
 import Magnetic from './Magnetic';
 import LoginModal from './LoginModal';
-import { auth, logout, onAuthStateChanged, User, getUserData } from '../lib/firebase';
+import { auth, onAuthStateChanged, User, getUserData } from '../lib/firebase';
 
 interface NavbarProps {
   darkMode: boolean;
@@ -44,6 +44,7 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
     { name: 'Tools', path: '/tools' },
     { name: 'Pricing', path: '/pricing' },
     { name: 'Payment', path: '/payment' },
+    ...(user ? [{ name: 'Profile', path: '/profile' }] : []),
     ...(isAdmin ? [{ name: 'Admin', path: '/admin' }] : []),
   ];
 
@@ -98,25 +99,26 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
             </button>
             
             {user ? (
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2 bg-gray-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-gray-200 dark:border-slate-700">
-                  {user.photoURL ? (
-                    <img src={user.photoURL} alt={user.displayName || ''} className="w-5 h-5 rounded-full" />
-                  ) : (
-                    <UserIcon className="w-4 h-4 text-gray-500" />
-                  )}
-                  <span className="text-xs font-bold text-deep-dark dark:text-white max-w-[80px] truncate">
-                    {user.displayName?.split(' ')[0]}
+              <Link
+                to="/profile"
+                className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-100 px-2.5 py-1.5 transition-all hover:border-primary-blue/20 hover:bg-white dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
+              >
+                {user.photoURL ? (
+                  <img src={user.photoURL} alt={user.displayName || ''} className="w-6 h-6 rounded-full object-cover" />
+                ) : (
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-blue/10 text-primary-blue">
+                    <UserIcon className="w-3.5 h-3.5" />
+                  </div>
+                )}
+                <div className="max-w-[110px]">
+                  <span className="block truncate text-xs font-bold text-deep-dark dark:text-white">
+                    {user.displayName?.split(' ')[0] || user.email?.split('@')[0]}
+                  </span>
+                  <span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">
+                    {isAdmin ? 'Admin' : 'Profile'}
                   </span>
                 </div>
-                <button 
-                  onClick={() => logout()}
-                  className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 transition-colors"
-                  title="Logout"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </div>
+              </Link>
             ) : (
               <button 
                 onClick={() => setIsLoginOpen(true)}
@@ -172,7 +174,26 @@ export default function Navbar({ darkMode, toggleDarkMode }: NavbarProps) {
               <div className="h-px bg-gray-100 dark:bg-slate-800" />
               <div className="flex flex-col gap-4">
                 {user ? (
-                  <button onClick={() => logout()} className="btn-secondary w-full text-red-500">Logout</button>
+                  <>
+                    <Link
+                      to="/profile"
+                      onClick={() => setIsOpen(false)}
+                      className="btn-secondary w-full dark:bg-slate-800 dark:text-white dark:border-slate-700"
+                    >
+                      <LayoutDashboard className="w-4 h-4" />
+                      Open Profile
+                    </Link>
+                    {isAdmin && (
+                      <Link
+                        to="/admin"
+                        onClick={() => setIsOpen(false)}
+                        className="btn-secondary w-full dark:bg-slate-800 dark:text-white dark:border-slate-700"
+                      >
+                        <ShieldCheck className="w-4 h-4" />
+                        Admin Panel
+                      </Link>
+                    )}
+                  </>
                 ) : (
                   <button onClick={() => { setIsOpen(false); setIsLoginOpen(true); }} className="btn-secondary w-full dark:bg-slate-800 dark:text-white dark:border-slate-700">Login</button>
                 )}

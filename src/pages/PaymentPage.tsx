@@ -132,6 +132,18 @@ export default function PaymentPage() {
     setStep(3);
   };
 
+  const handleDetailsSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (formData.name && formData.email && formData.phone) {
+      setStep(2);
+    }
+  };
+
+  const handleUpiSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    handleUPISubmit();
+  };
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-white px-6 pb-20 pt-32 dark:bg-slate-950">
       <BackgroundEffects />
@@ -204,62 +216,65 @@ export default function PaymentPage() {
                     exit={{ opacity: 0, x: -20 }}
                     className="space-y-6"
                   >
-                    <div className="grid gap-6 md:grid-cols-2">
-                      <Field label="Full Name" icon={User}>
-                        <input name="name" value={formData.name} onChange={handleInputChange} placeholder="John Doe" className="payment-input" />
-                      </Field>
-                      <Field label="Email Address" icon={Mail}>
-                        <input name="email" value={formData.email} onChange={handleInputChange} placeholder="john@example.com" className="payment-input" />
-                      </Field>
-                      <Field label="Phone Number" icon={Phone}>
-                        <input name="phone" value={formData.phone} onChange={handleInputChange} placeholder="+91 99999 99999" className="payment-input" />
-                      </Field>
-                      <Field label="Business Name (Optional)" icon={Package}>
-                        <input
-                          name="businessName"
-                          value={formData.businessName}
-                          onChange={handleInputChange}
-                          placeholder="My Store"
-                          className="payment-input"
-                        />
-                      </Field>
-                    </div>
-
-                    <div className="pt-4">
-                      <p className="mb-4 text-xs font-black uppercase tracking-widest text-gray-400">Select Your Plan</p>
-                      <div className="grid gap-4 md:grid-cols-3">
-                        {PLANS.map((plan) => (
-                          <button
-                            key={plan.name}
-                            onClick={() => setSelectedPlan(plan.name)}
-                            className={`rounded-3xl border-2 p-6 text-left transition-all duration-500 ${
-                              selectedPlan === plan.name
-                                ? 'border-primary-blue bg-primary-blue/5 shadow-xl'
-                                : 'border-gray-100 bg-white/50 hover:border-gray-200 dark:border-slate-800 dark:bg-slate-900/50 dark:hover:border-slate-700'
-                            }`}
-                          >
-                            <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-gray-400">{plan.name}</p>
-                            <p className="text-xl font-black text-deep-dark dark:text-white">{plan.price}</p>
-                            <p className="mt-2 text-xs text-gray-500 dark:text-slate-400">{plan.desc}</p>
-                          </button>
-                        ))}
+                    <form onSubmit={handleDetailsSubmit} className="space-y-6">
+                      <div className="grid gap-6 md:grid-cols-2">
+                        <Field label="Full Name" icon={User}>
+                          <input name="name" value={formData.name} onChange={handleInputChange} placeholder="John Doe" className="payment-input" />
+                        </Field>
+                        <Field label="Email Address" icon={Mail}>
+                          <input name="email" value={formData.email} onChange={handleInputChange} placeholder="john@example.com" className="payment-input" />
+                        </Field>
+                        <Field label="Phone Number" icon={Phone}>
+                          <input name="phone" value={formData.phone} onChange={handleInputChange} placeholder="+91 99999 99999" className="payment-input" />
+                        </Field>
+                        <Field label="Business Name (Optional)" icon={Package}>
+                          <input
+                            name="businessName"
+                            value={formData.businessName}
+                            onChange={handleInputChange}
+                            placeholder="My Store"
+                            className="payment-input"
+                          />
+                        </Field>
                       </div>
-                    </div>
 
-                    {paymentError && (
-                      <div className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600 dark:border-red-900/30 dark:bg-red-900/20 dark:text-red-300">
-                        {paymentError}
+                      <div className="pt-4">
+                        <p className="mb-4 text-xs font-black uppercase tracking-widest text-gray-400">Select Your Plan</p>
+                        <div className="grid gap-4 md:grid-cols-3">
+                          {PLANS.map((plan) => (
+                            <button
+                              type="button"
+                              key={plan.name}
+                              onClick={() => setSelectedPlan(plan.name)}
+                              className={`rounded-3xl border-2 p-6 text-left transition-all duration-500 ${
+                                selectedPlan === plan.name
+                                  ? 'border-primary-blue bg-primary-blue/5 shadow-xl'
+                                  : 'border-gray-100 bg-white/50 hover:border-gray-200 dark:border-slate-800 dark:bg-slate-900/50 dark:hover:border-slate-700'
+                              }`}
+                            >
+                              <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-gray-400">{plan.name}</p>
+                              <p className="text-xl font-black text-deep-dark dark:text-white">{plan.price}</p>
+                              <p className="mt-2 text-xs text-gray-500 dark:text-slate-400">{plan.desc}</p>
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    )}
 
-                    <button
-                      onClick={() => setStep(2)}
-                      disabled={!formData.name || !formData.email || !formData.phone}
-                      className="btn-primary w-full !py-5 text-lg disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      Continue to Review
-                      <ArrowRight className="h-5 w-5" />
-                    </button>
+                      {paymentError && (
+                        <div className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600 dark:border-red-900/30 dark:bg-red-900/20 dark:text-red-300">
+                          {paymentError}
+                        </div>
+                      )}
+
+                      <button
+                        type="submit"
+                        disabled={!formData.name || !formData.email || !formData.phone}
+                        className="btn-primary w-full !py-5 text-lg disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Continue to Review
+                        <ArrowRight className="h-5 w-5" />
+                      </button>
+                    </form>
                   </motion.div>
                 )}
 
@@ -297,6 +312,7 @@ export default function PaymentPage() {
                       <p className="text-xs font-black uppercase tracking-widest text-gray-400">Choose Payment Method</p>
                       <div className="grid gap-4 md:grid-cols-2">
                         <button
+                          type="button"
                           onClick={() => setPaymentMethod('upi')}
                           className={`flex items-center gap-4 rounded-3xl border-2 p-6 transition-all ${
                             paymentMethod === 'upi' ? 'border-primary-blue bg-primary-blue/5' : 'border-gray-100 dark:border-slate-800'
@@ -311,6 +327,7 @@ export default function PaymentPage() {
                           </div>
                         </button>
                         <button
+                          type="button"
                           onClick={() => setPaymentMethod('razorpay')}
                           className={`flex items-center gap-4 rounded-3xl border-2 p-6 transition-all ${
                             paymentMethod === 'razorpay' ? 'border-primary-blue bg-primary-blue/5' : 'border-gray-100 dark:border-slate-800'
@@ -334,7 +351,7 @@ export default function PaymentPage() {
                     )}
 
                     {paymentMethod === 'upi' ? (
-                      <div className="space-y-6">
+                      <form onSubmit={handleUpiSubmit} className="space-y-6">
                         <div className="rounded-3xl bg-gray-50 p-6 text-center dark:bg-slate-900">
                           <p className="mb-4 text-xs font-black uppercase tracking-widest text-gray-400">Scan QR to Pay</p>
                           <div className="mx-auto mb-4 h-48 w-48 rounded-2xl bg-white p-2 shadow-sm">
@@ -358,16 +375,16 @@ export default function PaymentPage() {
                           />
                         </div>
 
-                        <button onClick={handleUPISubmit} className="btn-primary w-full !py-5 text-lg">
+                        <button type="submit" className="btn-primary w-full !py-5 text-lg">
                           Submit Payment Details
                         </button>
-                      </div>
+                      </form>
                     ) : (
                       <div className="flex gap-4">
-                        <button onClick={() => setStep(1)} className="btn-secondary flex-1 !py-5">
+                        <button type="button" onClick={() => setStep(1)} className="btn-secondary flex-1 !py-5">
                           Back
                         </button>
-                        <button onClick={handleRazorpayPayment} className="btn-primary flex-[2] !py-5 text-lg">
+                        <button type="button" onClick={handleRazorpayPayment} className="btn-primary flex-[2] !py-5 text-lg">
                           Pay with Razorpay
                           <ArrowRight className="h-5 w-5" />
                         </button>
