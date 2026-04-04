@@ -180,6 +180,11 @@ const ImageShippingOptimizer: React.FC = () => {
     setImageFile(file);
   };
 
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    await handleOptimize();
+  };
+
   return (
     <div className="space-y-8 max-w-6xl mx-auto">
       <motion.div className="glass-card p-8 rounded-[2rem]">
@@ -202,7 +207,7 @@ const ImageShippingOptimizer: React.FC = () => {
             )}
           </div>
 
-          <div className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <h3 className="text-lg font-bold">Package Details</h3>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
@@ -252,14 +257,14 @@ const ImageShippingOptimizer: React.FC = () => {
               </div>
             </div>
             <button
-              onClick={handleOptimize}
+              type="submit"
               disabled={isOptimizing}
               className="w-full bg-gradient-to-r from-primary-blue to-blue-600 text-white py-4 rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl disabled:opacity-50 transition-all flex items-center justify-center gap-2"
             >
               {isOptimizing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Crop className="w-5 h-5" />}
               {isOptimizing ? 'Optimizing...' : 'Optimize for Cheapest Shipping'}
             </button>
-          </div>
+          </form>
         </div>
         {error && <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 font-bold">{error}</div>}
       </motion.div>

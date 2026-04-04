@@ -40,10 +40,15 @@ export default function ShippingPredictorTool() {
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    await handlePredict();
+  };
+
   return (
     <div className="space-y-8">
       <div className="grid gap-12 md:grid-cols-2">
-        <div className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-2 block text-sm font-bold text-gray-700 dark:text-slate-300">
@@ -121,7 +126,7 @@ export default function ShippingPredictorTool() {
           </div>
 
           <button
-            onClick={handlePredict}
+            type="submit"
             disabled={isPredicting}
             className="btn-primary w-full !py-4"
           >
@@ -139,7 +144,7 @@ export default function ShippingPredictorTool() {
           </button>
 
           {error && <p className="text-center text-sm font-bold text-red-500">{error}</p>}
-        </div>
+        </form>
 
         <div className="space-y-6">
           {prediction ? (

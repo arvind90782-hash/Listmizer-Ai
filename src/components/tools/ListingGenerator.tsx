@@ -56,6 +56,11 @@ export default function ListingGenerator() {
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    await handleGenerate();
+  };
+
   return (
     <div className="space-y-8">
       {!isLoggedIn && (
@@ -65,7 +70,7 @@ export default function ListingGenerator() {
       )}
 
       <div className="grid gap-8 md:grid-cols-2">
-        <div className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="mb-2 block text-sm font-bold text-gray-700 dark:text-slate-300">
               Product Name
@@ -99,6 +104,7 @@ export default function ListingGenerator() {
             <div className="flex flex-wrap gap-2">
               {['Amazon', 'Flipkart', 'Meesho', 'Myntra'].map((p) => (
                 <button
+                  type="button"
                   key={p}
                   onClick={() => setPlatform(p)}
                   className={`rounded-full border px-4 py-2 text-xs font-bold transition-all ${
@@ -121,7 +127,7 @@ export default function ListingGenerator() {
           )}
 
           <button
-            onClick={handleGenerate}
+            type="submit"
             disabled={isGenerating}
             className="btn-primary w-full !py-4"
           >
@@ -137,7 +143,7 @@ export default function ListingGenerator() {
               </>
             )}
           </button>
-        </div>
+        </form>
 
         <div className="relative min-h-[400px]">
           <div className="absolute inset-0 overflow-auto rounded-2xl border border-gray-100 bg-gray-50 p-6 dark:border-slate-700 dark:bg-slate-800/50">

@@ -58,6 +58,11 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     }
   };
 
+  const handleEmailSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    await handleEmailAuth();
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -106,50 +111,52 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
               </div>
             )}
 
-            <div className="space-y-3">
-              {mode === 'signup' && (
+            <form onSubmit={handleEmailSubmit}>
+              <div className="space-y-3">
+                {mode === 'signup' && (
+                  <div className="relative">
+                    <UserRound className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <input
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      type="text"
+                      placeholder="Full name"
+                      className="w-full rounded-2xl border-0 bg-gray-50 py-3.5 pl-11 pr-4 text-sm font-medium outline-none ring-1 ring-transparent transition focus:ring-primary-blue dark:bg-slate-800 dark:text-white"
+                    />
+                  </div>
+                )}
+
                 <div className="relative">
-                  <UserRound className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   <input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    type="text"
-                    placeholder="Full name"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    type="email"
+                    placeholder="Email address"
                     className="w-full rounded-2xl border-0 bg-gray-50 py-3.5 pl-11 pr-4 text-sm font-medium outline-none ring-1 ring-transparent transition focus:ring-primary-blue dark:bg-slate-800 dark:text-white"
                   />
                 </div>
-              )}
 
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                <input
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  type="email"
-                  placeholder="Email address"
-                  className="w-full rounded-2xl border-0 bg-gray-50 py-3.5 pl-11 pr-4 text-sm font-medium outline-none ring-1 ring-transparent transition focus:ring-primary-blue dark:bg-slate-800 dark:text-white"
-                />
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <input
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    type="password"
+                    placeholder="Password"
+                    className="w-full rounded-2xl border-0 bg-gray-50 py-3.5 pl-11 pr-4 text-sm font-medium outline-none ring-1 ring-transparent transition focus:ring-primary-blue dark:bg-slate-800 dark:text-white"
+                  />
+                </div>
               </div>
 
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                <input
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  type="password"
-                  placeholder="Password"
-                  className="w-full rounded-2xl border-0 bg-gray-50 py-3.5 pl-11 pr-4 text-sm font-medium outline-none ring-1 ring-transparent transition focus:ring-primary-blue dark:bg-slate-800 dark:text-white"
-                />
-              </div>
-            </div>
-
-            <button
-              onClick={handleEmailAuth}
-              disabled={loading}
-              className="btn-primary mt-5 w-full !py-3.5"
-            >
-              {loading ? 'Please wait...' : mode === 'login' ? 'Sign In' : 'Create Account'}
-            </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn-primary mt-5 w-full !py-3.5"
+              >
+                {loading ? 'Please wait...' : mode === 'login' ? 'Sign In' : 'Create Account'}
+              </button>
+            </form>
 
             <div className="relative my-5 flex items-center gap-3">
               <div className="h-px flex-1 bg-gray-100 dark:bg-slate-800" />
