@@ -47,6 +47,24 @@
     cursor: default;
   }
 
+  a,
+  button,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  label[for],
+  summary {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  input:disabled,
+  select:disabled,
+  textarea:disabled {
+    cursor: not-allowed;
+  }
+
   .dark body {
     @apply bg-slate-950 text-slate-50;
   }
