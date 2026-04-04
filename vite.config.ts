@@ -59,7 +59,7 @@ function localApiPlugin() {
 
 export default defineConfig(() => {
   return {
-    base: './',
+    base: '/',
     plugins: [react(), tailwindcss(), localApiPlugin()],
     build: {
       rollupOptions: {
